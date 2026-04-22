@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Database Service
+  db:
+    image: postgres:17
+    container_name: kapomtify-db
+    restart: always
+    environment:
+      POSTGRES_USER: user_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: kapomtify
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # เชื่อมกับโฟลเดอร์ init เพื่อรัน SQL อัตโนมัติในครั้งแรก
+      - ./database/init:/docker-entrypoint-initdb.d
+
+  # Adminer สำหรับดูหน้า Database ผ่าน UI (localhost:8080)
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8888:8080"
+
+volumes:
+  pgdata:

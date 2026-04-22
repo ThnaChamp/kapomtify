@@ -1,0 +1,16 @@
+# Dependency folders
+node_modules/
+
+# Environment variables
+.env
+
+# Docker data
+pgdata/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
