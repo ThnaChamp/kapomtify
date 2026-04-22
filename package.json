@@ -1,0 +1,10 @@
+{
+  "name": "kapomtify-root",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "docker:up": "docker-compose up -d",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "start-all": "npm run docker:up && npm run dev:server"
+  }
+}
