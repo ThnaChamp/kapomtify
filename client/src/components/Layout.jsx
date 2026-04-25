@@ -28,6 +28,10 @@ const UsersIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const SubIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
 const PlaylistIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none" /><circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none" /></svg>;
 const AnalyticsIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
+const TransactionIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><rect x="3" y="5" width="18" height="14" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M7 15h.01M11 15h.01" /></svg>;
+const OverviewIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>;
+const ContentReportIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>;
+const RecommendIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>;
 
 /* ── Navigation Data ───────────────────────────────────────────────────────── */
 const NAV = [
@@ -45,10 +49,18 @@ const NAV = [
     items: [
       { id: "users", label: "Users", icon: <UsersIcon />, path: "/users" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription" }, 
-      { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlists" }
+      { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlists" },
+      { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transactions" } // เพิ่มใหม่
     ] 
   },
-  { group: "REPORTS", items: [{ id: "analytics", label: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" }] },
+  { 
+    group: "REPORTS", 
+    items: [
+      { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/reports/overview" },
+      { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/reports/content" },
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/recommendation" } // เพิ่มใหม่
+    ] 
+  },
 ];
 
 /* ── Sidebar Component ────────────────────────────────────────────────────── */
@@ -74,24 +86,33 @@ function Sidebar({ isOpen, onClose }) {
 
         <nav className="py-4 flex-1">
           {NAV.map(({ group, items }) => (
-            <div key={group} className="mb-4">
-              <p className="text-[#4a4a4a] text-[10px] font-bold tracking-widest px-5 mb-1">{group}</p>
+            <div key={group} className="mb-6">
+              <p className="text-[#8e8e8e] text-[11px] font-bold tracking-[0.1em] px-6 mb-3 uppercase">{group}</p>
               {items.map(({ id, label, icon, path }) => (
                 <NavLink
                   key={id}
                   to={path}
+                  end={path === "/"}
                   onClick={onClose}
                   className={({ isActive }) => 
-                    `flex items-center gap-3 w-full px-5 py-2.5 relative transition-colors hover:bg-white/5 ${isActive ? "bg-[#1DB954]/10" : ""}`
+                    `flex items-center gap-3 w-full px-5 py-2 transition-all duration-200 group relative
+                    ${isActive ? "bg-white/[0.07] text-[#1DB954]" : "text-[#b3b3b3] hover:text-white hover:bg-white/5"}`
                   }
                 >
                   {({ isActive }) => (
                     <>
-                      <span className={isActive ? "text-[#1DB954]" : "text-gray-500"}>{icon}</span>
-                      <span className={`text-sm tracking-wide ${isActive ? "text-white font-semibold" : "text-[#a0a0a0]"}`}>
+                      {/* ไอคอน: ถ้า Active ให้เป็นสีเขียวสว่าง ถ้าไม่ให้เป็นสีเทา */}
+                      <span className={`transition-colors ${isActive ? "text-[#1DB954]" : "text-[#b3b3b3] group-hover:text-white"}`}>
+                        {icon}
+                      </span>
+                      
+                      {/* ตัวหนังสือ: ปรับขนาดเป็น text-sm และความหนาให้ดูพอดี */}
+                      <span className={`text-[14px] tracking-wide transition-colors ${isActive ? "text-white font-bold" : "font-medium"}`}>
                         {label}
                       </span>
-                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-3/5 bg-[#1DB954] rounded-r-sm" />}
+
+                      {/* แถบสีเขียวด้านข้าง (ถ้าต้องการตามดีไซน์เดิม) หรือจะเอาออกเพื่อให้เหมือนรูปเป๊ะๆ ก็ได้ครับ */}
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#1DB954] rounded-r-sm" />}
                     </>
                   )}
                 </NavLink>
@@ -156,7 +177,7 @@ export default function KapomtifyLayout() {
       <div className="flex-1 min-w-0 flex flex-col h-full">
         <Header title={displayTitle} onMenuClick={() => setSidebarOpen(o => !o)} />
         
-        <main className="flex-1 overflow-y-auto p-7">
+        <main className="flex-1 overflow-y-auto p-0">
           {/* Outlet คือจุดที่ Component ของแต่ละหน้าจะมาโผล่ */}
           <Outlet />
         </main>
