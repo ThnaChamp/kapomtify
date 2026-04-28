@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Dashboard = () => {
+const Users = () => {
   return (
-    <div className="text-white text-4xl">
+    <div className="text-white">
       {/* เราจะเริ่มเขียนตรงนี้ */}
-      {/* Hello Kapomtify! */}
+      Hello Kapomtify!
     </div>
   );
 };
 
-export default Dashboard;
+export default Users;
