@@ -26,7 +26,7 @@ export default function MusicPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-semibold transition-all ${
+            className={`pb-3 text-xl font-semibold transition-all ${
               activeTab === tab ? "text-[#1DB954] border-b-2 border-[#1DB954]" : "text-gray-400"
             }`}
           >
@@ -50,7 +50,7 @@ export default function MusicPage() {
             <FilterIcon /> Filter
           </button>
         </div>
-        <button className="flex items-center gap-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-4 py-2 rounded-md text-sm transition-transform active:scale-95">
+        <button className="flex items-center gap-2 bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold px-4 py-2 rounded-md text-l transition-transform active:scale-95">
           <PlusIcon /> Create music
         </button>
       </div>
@@ -60,7 +60,7 @@ export default function MusicPage() {
       <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden mt-2 shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
+            <tr className="bg-[#252525] text-s font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
               <th className="px-6 py-4 w-12">#</th>
               <th className="px-6 py-4">Music ID</th>
               <th className="px-6 py-4">Title</th>
@@ -73,18 +73,18 @@ export default function MusicPage() {
           <tbody className="divide-y divide-[#333]">
             {MUSIC_DATA.map((m, i) => (
               <tr key={m.id} className="hover:bg-[#2a2a2a] transition-colors">
-                <td className="px-6 py-5 text-sm font-bold text-gray-300">{i + 1}</td>
-                <td className="px-6 py-5 text-sm font-bold text-gray-300">{m.id}</td>
-                <td className="px-6 py-5 text-sm font-medium text-gray-300">{m.title}</td>
-                <td className="px-6 py-5 text-sm text-gray-400">{m.artist}</td>
-                <td className="px-6 py-5 text-sm text-gray-400">{m.date}</td>
-                <td className="px-6 py-5 text-sm text-gray-400">{m.genre}</td>
+                <td className="px-6 py-5 text-m font-bold text-gray-300">{i + 1}</td>
+                <td className="px-6 py-5 text-m font-bold text-gray-300">{m.id}</td>
+                <td className="px-6 py-5 text-m font-medium text-gray-300">{m.title}</td>
+                <td className="px-6 py-5 text-m text-gray-400">{m.artist}</td>
+                <td className="px-6 py-5 text-m text-gray-400">{m.date}</td>
+                <td className="px-6 py-5 text-m text-gray-400">{m.genre}</td>
                 <td className="px-6 py-5">
                   <div className="flex gap-2 justify-end">
-                    <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]">
+                    <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-s font-bold text-gray-300 hover:bg-[#333]">
                       Detail
                     </button>
-                    <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">
+                    <button className="px-3 py-1 bg-[#ff00001c] border [#f87171] rounded text-s font-bold text-[#DB2222] hover:bg-[#ff000054]">
                       Delete
                     </button>
                   </div>
@@ -96,10 +96,10 @@ export default function MusicPage() {
       </div>
 
       {/* ── Pagination ── */}
-      <div className="flex justify-end items-center gap-2 mt-2">
-        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-xs text-gray-400 hover:bg-[#333]">1</button>
-        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-xs text-gray-400 hover:bg-[#333]">2</button>
-        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-xs text-gray-400 hover:bg-[#333]">»</button>
+      <div className="flex justify-end items-center gap-2 mt-2  bottom-* right-* p-4">
+        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-s text-gray-400 hover:bg-[#333]">1</button>
+        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-s text-gray-400 hover:bg-[#333]">2</button>
+        <button className="w-8 h-8 flex items-center justify-center rounded border border-[#444] text-s text-gray-400 hover:bg-[#333]">»</button>
       </div>
     </div>
     </div>
