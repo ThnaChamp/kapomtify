@@ -177,7 +177,7 @@ export default function KapomtifyLayout() {
       <div className="flex-1 min-w-0 flex flex-col h-full">
         <Header title={displayTitle} onMenuClick={() => setSidebarOpen(o => !o)} />
         
-        <main className="flex-1 overflow-y-auto p-0">
+        <main className="flex-1 overflow-y-auto p-0 custom-scrollbar">
           {/* Outlet คือจุดที่ Component ของแต่ละหน้าจะมาโผล่ */}
           <Outlet />
         </main>

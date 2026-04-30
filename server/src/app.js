@@ -2,6 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const { userCreateSchema } = require('./models/user.schema');
 const { createUser } = require('./services/user.service');
+const musicRoutes = require('./routes/musicRoutes');
+const albumRoutes = require('./routes/albumRoutes');
+const artistRoutes = require('./routes/artistRoutes');
+const genreRoutes = require('./routes/genreRoutes');
+
 require('dotenv').config();
 
 const app = express();
@@ -13,16 +18,11 @@ const PORT = 4567;
 app.get('/health', (req,res) => {
     res.json({ status: 'ok', message: 'Server is running'});
 });
+app.use('/api/music', musicRoutes);
+app.use('/api/albums', albumRoutes);
+app.use('/api/artists', artistRoutes);
+app.use('/api/genres', genreRoutes);
 
-app.post('/api/users',async (req, res) => {
-    try {
-        const validatedData = userCreateSchema.parse(req.body);
-        const newUser = await createUser(validatedData);
-        res.status(201).json(newUser);
-    } catch (error) {
-        res.status(400).json({ error: error.message || error});
-    }
-});
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
