@@ -1,8 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from "./components/Layout";
 import Dashboard from './pages/Dashboard';
-import Music from "./pages/Music";
-import MusicDetail from "./pages/MusicDetail"
+import MusicDetail from "./pages/music_album/MusicDetail"
+import Music from "./pages/music_album/Music";
+import Users from "./pages/users/Users";
 function App() {
   
   return (
@@ -13,6 +14,9 @@ function App() {
         <Route path="/" element={<Dashboard/>} />
         <Route path="/music" element={<Music/>} />
         <Route path="/music/:id/" element={<MusicDetail/>}/>
+        <Route path="/users" element={<Users/>} />
+        {/* <Route path="/subscription-plans" element={<SubscriptionPlans/>} /> */}
+
         </Route>
         
       </Routes>
