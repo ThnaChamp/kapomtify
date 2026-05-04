@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SubscriptionPlans = () => {
+const Artist = () => {
   return (
     <div className="text-white text-4xl">
       {/* เราจะเริ่มเขียนตรงนี้ */}
@@ -9,4 +9,4 @@ const SubscriptionPlans = () => {
   );
 };
 
-export default SubscriptionPlans;
+export default Artist;
