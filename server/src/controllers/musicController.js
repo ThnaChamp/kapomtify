@@ -1,9 +1,35 @@
 const db = require("../db/pool");
 const getAllMusic = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
+        
+        const { search,genreId, page: rawPage = 1 } = req.query; 
+        const page = parseInt(rawPage);
         const limit = 20;
-        const offset = (page -1) * limit;
+        const offset = (page - 1) * limit;
+
+        let conditions = [];
+        let queryParams = [];
+
+        if (search) {
+            queryParams.push(`%${search}%`);
+            conditions.push(`(m.title ILIKE $${queryParams.length}::text OR m.music_code ILIKE $${queryParams.length}::text)`);
+        }
+        if (genreId) {
+            queryParams.push(genreId);
+            // ใช้ EXISTS หรือ IN เพื่อตรวจสอบความสัมพันธ์ใน music_genre
+            conditions.push(`m.music_id IN (SELECT music_id FROM music_genre WHERE genre_id = $${queryParams.length})`);
+        }
+const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : "";
+        
+        // สำหรับ Count Query (ใช้ params ชุดเดียวกับ Filter)
+        const countQuery = `SELECT COUNT(*) FROM music m ${whereClause}`;
+        const countParams = [...queryParams];
+
+        // สำหรับ Music Query (ต้องเพิ่ม Limit และ Offset ต่อท้าย)
+        queryParams.push(limit);   // ตัวเลขต่อจากตัวสุดท้าย
+        const limitIdx = queryParams.length;
+        queryParams.push(offset);  // ตัวเลขถัดไป
+        const offsetIdx = queryParams.length;
 
         const musicQuery = `
             SELECT
@@ -12,37 +38,38 @@ const getAllMusic = async (req, res) => {
                 m.title,
                 m.release_date,
                 m.duration,
-                string_agg(DISTINCT a.artist_name,', ') AS artist_names,
+                string_agg(DISTINCT a.artist_name, ', ') AS artist_names,
                 string_agg(DISTINCT g.genre_name, ', ') AS genre_names
             FROM music m
             LEFT JOIN music_artist ma ON m.music_id = ma.music_id
             LEFT JOIN artist a ON ma.artist_id = a.artist_id
             LEFT JOIN music_genre mg ON m.music_id = mg.music_id
             LEFT JOIN genre g ON mg.genre_id = g.genre_id
-            GROUP BY m.music_id , m.music_code
+            ${whereClause}
+            GROUP BY m.music_id, m.music_code
             ORDER BY m.music_id ASC
-            LIMIT $1 OFFSET $2;
+            LIMIT $${limitIdx} OFFSET $${offsetIdx};
         `;
-        const countQuery = `SELECT COUNT(*) FROM music;`;
-
         const [musicRes, countRes] = await Promise.all([
-            db.query(musicQuery, [limit,offset]),
-            db.query(countQuery)
+            db.query(musicQuery, queryParams),
+            db.query(countQuery, countParams)
         ]);
-        const totalItems = parseInt(countRes.rows[0].count);
-        const totalPages = Math.ceil(totalItems / limit);
 
+        const totalItems = parseInt(countRes.rows[0].count);
+        const totalPages = Math.ceil(totalItems / limit) || 1;
+        
         res.status(200).json({
             data: musicRes.rows,
             pagination: {
                 currentPage: page,
                 totalPages: totalPages,
-                totaltems: totalItems
+                totalItems: totalItems // แก้ตัวสะกดจาก totaltems เป็น totalItems
             }
         });
     } catch (err) {
-        console.error("Error at getAllMusic:",err.message);
-        res.status(500).json({ error: "Server error while fetching music"});
+        // บรรทัดนี้จะช่วยให้คุณเห็น Error ที่ชัดเจนขึ้นใน Terminal
+        console.error("Error at getAllMusic:", err.message); 
+        res.status(500).json({ error: err.message });
     }
 };
 

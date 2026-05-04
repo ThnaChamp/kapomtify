@@ -78,12 +78,13 @@ export default function MusicDetail() {
   const genres = data.genre_names?.split(",").map((g) => g.trim()) ?? [];
 
   return (
-    <div className="bg-[#1a1a1a] min-h-screen text-[#e0e0e0] font-sans">
+    <div className="bg-[#1a1a1a] min-h-screen text-[#e0e0e0] font-sans ">
 
      
 
       {/* ── TABS ── */}
-      <div className="px-8 flex gap-6 border-b border-white/10 bg-[#1a1a1a]">
+      <div className="px-8 flex items-center justify-between gap-6 border-b border-white/10 bg-[#1a1a1a]">
+        <div className="flex gap-6">
         <button
           onClick={() => navigate("/music")}
           className="py-3 text-sm font-semibold text-[#1DB954] border-b-2 border-[#1DB954] -mb-px"
@@ -95,6 +96,22 @@ export default function MusicDetail() {
           className="py-3 text-sm font-semibold text-gray-400 hover:text-white border-b-2 border-transparent -mb-px transition-colors"
         >
           Album
+        </button>
+        </div>
+        <button 
+          onClick={() => navigate("/music")}
+          className="text-gray-400 hover:text-white transition-colors p-1"
+          title="Back to Albums"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-6 w-6" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 

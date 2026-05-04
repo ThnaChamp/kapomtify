@@ -43,27 +43,27 @@ INSERT INTO artist (artist_id, artist_code, artist_name, bio, debut_year, profil
 -- FIX: ลบ total_music ออก (ไม่มีใน DDL ใหม่)
 -- FIX: แก้ closing quote ของ cover_image_url rows 10-18
 -- =============================================
-INSERT INTO album (album_id, artist_id, album_code, album_name, album_type, release_date, cover_image_url) VALUES
-(1,  1,  'ALB-001', 'After Hours',             'album', '2020-03-20', 'https://img.example.com/album/1.jpg'),
-(2,  1,  'ALB-002', 'Dawn FM',                 'album', '2022-01-07', 'https://img.example.com/album/2.jpg'),
-(3,  2,  'ALB-003', 'Midnights',               'album', '2022-10-21', 'https://img.example.com/album/3.jpg'),
-(4,  2,  'ALB-004', 'Lover',                   'album', '2019-08-23', 'https://img.example.com/album/4.jpg'),
-(5,  3,  'ALB-005', 'Map of the Soul: 7',      'album', '2020-02-21', 'https://img.example.com/album/5.jpg'),
-(6,  4,  'ALB-006', 'Happier Than Ever',        'album', '2021-07-30', 'https://img.example.com/album/6.jpg'),
-(7,  5,  'ALB-007', 'Divide',                  'album', '2017-03-03', 'https://img.example.com/album/7.jpg'),
-(8,  6,  'ALB-008', 'Future Nostalgia',         'album', '2020-03-27', 'https://img.example.com/album/8.jpg'),
-(9,  7,  'ALB-009', 'Certified Lover Boy',      'album', '2021-09-03', 'https://img.example.com/album/9.jpg'),
-(10, 8,  'ALB-010', 'Thank U, Next',            'album', '2019-02-08', 'https://img.example.com/album/10.jpg'),
-(11, 9,  'ALB-011', 'Hollywood Bleeding',       'album', '2019-09-06', 'https://img.example.com/album/11.jpg'),
-(12, 10, 'ALB-012', 'SOUR',                    'album', '2021-05-21', 'https://img.example.com/album/12.jpg'),
-(13, 11, 'ALB-013', 'Harry''s House',           'album', '2022-05-20', 'https://img.example.com/album/13.jpg'),
-(14, 12, 'ALB-014', '30',                      'album', '2021-11-19', 'https://img.example.com/album/14.jpg'),
-(15, 13, 'ALB-015', 'Music of the Spheres',    'album', '2021-10-15', 'https://img.example.com/album/15.jpg'),
-(16, 15, 'ALB-016', 'Planet Her',              'album', '2021-06-25', 'https://img.example.com/album/16.jpg'),
-(17, 16, 'ALB-017', 'SOS',                     'album', '2022-12-09', 'https://img.example.com/album/17.jpg'),
-(18, 17, 'ALB-018', 'Mr. Morale',              'album', '2022-05-13', 'https://img.example.com/album/18.jpg'),
-(19, 19, 'ALB-019', 'An Evening With Silk Sonic', 'album', '2021-11-05', 'https://img.example.com/album/19.jpg'),
-(20, 14, 'ALB-020', 'Justice',                 'album', '2021-03-19', 'https://img.example.com/album/20.jpg');
+INSERT INTO album (artist_id, album_code, album_name, album_type, release_date, cover_image_url) VALUES
+(1,  'ALB-001', 'After Hours',                'album', '2020-03-20', 'https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png'),
+(1,  'ALB-002', 'Dawn FM',                    'album', '2022-01-07', 'https://upload.wikimedia.org/wikipedia/en/8/8d/Dawn_FM_-_The_Weeknd.png'),
+(2,  'ALB-003', 'Midnights',                  'album', '2022-10-21', 'https://upload.wikimedia.org/wikipedia/en/9/9f/Midnights_-_Taylor_Swift.png'),
+(2,  'ALB-004', 'Lover',                      'album', '2019-08-23', 'https://upload.wikimedia.org/wikipedia/en/c/cd/Taylor_Swift_-_Lover.png'),
+(3,  'ALB-005', 'Map of the Soul: 7',         'album', '2020-02-21', 'https://upload.wikimedia.org/wikipedia/en/3/33/Map_of_the_Soul_7.png'),
+(4,  'ALB-006', 'Happier Than Ever',           'album', '2021-07-30', 'https://upload.wikimedia.org/wikipedia/en/7/7e/Billie_Eilish_-_Happier_Than_Ever.png'),
+(5,  'ALB-007', 'Divide',                     'album', '2017-03-03', 'https://upload.wikimedia.org/wikipedia/en/4/45/Ed_Sheeran_-_Divide.png'),
+(6,  'ALB-008', 'Future Nostalgia',            'album', '2020-03-27', 'https://upload.wikimedia.org/wikipedia/en/8/8a/Dua_Lipa_-_Future_Nostalgia_%28Official_Album_Cover%29.png'),
+(7,  'ALB-009', 'Certified Lover Boy',         'album', '2021-09-03', 'https://upload.wikimedia.org/wikipedia/en/5/51/Certified_Lover_Boy_-_Drake.jpg'),
+(8,  'ALB-010', 'Thank U, Next',               'album', '2019-02-08', 'https://upload.wikimedia.org/wikipedia/en/b/b9/Thank_U%2C_Next_album_cover.png'),
+(9,  'ALB-011', 'Hollywood Bleeding',          'album', '2019-09-06', 'https://upload.wikimedia.org/wikipedia/en/d/d0/Post_Malone_-_Hollywood%27s_Bleeding.png'),
+(10, 'ALB-012', 'SOUR',                       'album', '2021-05-21', 'https://upload.wikimedia.org/wikipedia/en/9/9d/Olivia_Rodrigo_-_Sour.png'),
+(11, 'ALB-013', 'Harry''s House',              'album', '2022-05-20', 'https://upload.wikimedia.org/wikipedia/en/c/ca/Harry_Styles_-_Harry%27s_House.png'),
+(12, 'ALB-014', '30',                         'album', '2021-11-19', 'https://upload.wikimedia.org/wikipedia/en/b/b7/Adele_-_30.png'),
+(13, 'ALB-015', 'Music of the Spheres',       'album', '2021-10-15', 'https://upload.wikimedia.org/wikipedia/en/5/5e/Coldplay_-_Music_of_the_Spheres.png'),
+(15, 'ALB-016', 'Planet Her',                 'album', '2021-06-25', 'https://upload.wikimedia.org/wikipedia/en/6/6b/Doja_Cat_-_Planet_Her.png'),
+(16, 'ALB-017', 'SOS',                        'album', '2022-12-09', 'https://upload.wikimedia.org/wikipedia/en/3/3d/SZA_-_SOS.png'),
+(17, 'ALB-018', 'Mr. Morale',                 'album', '2022-05-13', 'https://upload.wikimedia.org/wikipedia/en/3/3d/Kendrick_Lamar_-_Mr._Morale_%26_The_Big_Steppers.png'),
+(19, 'ALB-019', 'An Evening With Silk Sonic',  'album', '2021-11-05', 'https://upload.wikimedia.org/wikipedia/en/d/d4/Silk_Sonic_-_An_Evening_with_Silk_Sonic.png'),
+(14, 'ALB-020', 'Justice',                    'album', '2021-03-19', 'https://upload.wikimedia.org/wikipedia/en/3/37/Justin_Bieber_-_Justice.png');
 
 -- =============================================
 -- 4. genre (10 rows)

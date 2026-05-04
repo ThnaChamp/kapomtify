@@ -94,27 +94,40 @@ function Sidebar({ isOpen, onClose }) {
                   to={path}
                   end={path === "/"}
                   onClick={onClose}
-                  className={({ isActive }) => 
-                    `flex items-center gap-3 w-full px-5 py-2 transition-all duration-200 group relative
-                    ${isActive ? "bg-white/[0.07] text-[#1DB954]" : "text-[#b3b3b3] hover:text-white hover:bg-white/5"}`
+                  className={({ isActive }) => {
+                    const isMusicTabActive = isActive || (id === "music" && location.pathname.startsWith("/album"));
+                    return `flex items-center gap-3 w-full px-5 py-2 transition-all duration-200 group relative
+                    ${isMusicTabActive ? "bg-white/[0.07] text-[#1DB954]" : "text-[#b3b3b3] hover:text-white hover:bg-white/5"}`
+                  }
+                    
                   }
                 >
-                  {({ isActive }) => (
-                    <>
-                      {/* ไอคอน: ถ้า Active ให้เป็นสีเขียวสว่าง ถ้าไม่ให้เป็นสีเทา */}
-                      <span className={`transition-colors ${isActive ? "text-[#1DB954]" : "text-[#b3b3b3] group-hover:text-white"}`}>
-                        {icon}
-                      </span>
-                      
-                      {/* ตัวหนังสือ: ปรับขนาดเป็น text-sm และความหนาให้ดูพอดี */}
-                      <span className={`text-[14px] tracking-wide transition-colors ${isActive ? "text-white font-bold" : "font-medium"}`}>
-                        {label}
-                      </span>
+                  {({ isActive }) => {
+                    const isMusicTabActive = isActive || (id === "music" && location.pathname.startsWith("/album"));
+                    return (
+      <>
+        {/* 1. แถบสีเขียวด้านหน้า (Vertical Bar): ปรับให้มีความโค้งมนและไม่ชิดขอบบนล่างจนเกินไป */}
+        {isMusicTabActive && (
+          <div className="absolute left-0 top-1.5 bottom-1.5 w-[4px] bg-[#1DB954] rounded-r-full" />
+        )}
 
-                      {/* แถบสีเขียวด้านข้าง (ถ้าต้องการตามดีไซน์เดิม) หรือจะเอาออกเพื่อให้เหมือนรูปเป๊ะๆ ก็ได้ครับ */}
-                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#1DB954] rounded-r-sm" />}
-                    </>
-                  )}
+        {/* 2. ไอคอน: เมื่อ Active จะเป็นสีเขียวเสมอ */}
+        <span className={`transition-colors ${isMusicTabActive ? "text-[#1DB954]" : "text-[#b3b3b3] group-hover:text-white"}`}>
+          {icon}
+        </span>
+        
+        {/* 3. ตัวหนังสือ: เมื่อ Active จะเป็นสีขาว (text-white) และตัวหนา (font-bold) */}
+        <span className={`text-[14px] tracking-wide transition-colors ${
+          isMusicTabActive 
+            ? "text-white font-bold" 
+            : "text-[#b3b3b3] font-medium group-hover:text-white"
+        }`}>
+          {label}
+        </span>
+      </>
+    );
+                    
+                  }}
                 </NavLink>
               ))}
             </div>
@@ -167,7 +180,13 @@ export default function KapomtifyLayout() {
 
   // หา Title จาก Path ปัจจุบัน
   const allItems = NAV.flatMap(group => group.items);
-  const activeItem = allItems.find(item => item.path === location.pathname);
+  const activeItem = allItems.find(item => {
+    
+    if (location.pathname.startsWith("/album")) {
+      return item.id === "music";
+    }
+    return item.path === location.pathname;
+  });
   const displayTitle = activeItem ? activeItem.label : "Kapomtify";
 
   return (
