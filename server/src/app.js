@@ -7,6 +7,8 @@ const albumRoutes = require('./routes/albumRoutes');
 const artistRoutes = require('./routes/artistRoutes');
 const genreRoutes = require('./routes/genreRoutes');
 const userRoutes = require('./routes/userRoutes');
+const playlistRoutes = require('./routes/playlistRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 require('dotenv').config();
 
@@ -24,7 +26,8 @@ app.use('/api/albums', albumRoutes);
 app.use('/api/artists', artistRoutes);
 app.use('/api/genres', genreRoutes);
 app.use('/api/users',userRoutes);
-
+app.use('/api/playlists', playlistRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

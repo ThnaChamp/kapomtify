@@ -162,36 +162,60 @@ useEffect(() => {
               <tr className="text-gray-400 font-bold border-b border-white/5 text-[11px] uppercase tracking-[0.2em]">
                 <th className="pb-4 px-3 w-16">#</th>
                 <th className="pb-4 px-3 text-center w-24">Cover</th>
-                <th className="pb-4 px-3">Album</th>
-                <th className="pb-4 px-3">Artist</th>
-                <th className="pb-4 px-3">Type</th>
-                <th className="pb-4 px-3">Saved at</th>
+                
+                {/* ปรับเปลี่ยนหัวข้อตามแท็บที่เลือก */}
+                <th className="pb-4 px-3">
+                  {activeTab.includes("Artists") ? "Artist" : 
+                  activeTab.includes("Playlists") ? "Playlist Name" : 
+                  activeTab.includes("Subscription") ? "Plan Name" : "Album"}
+                </th>
+                
+                <th className="pb-4 px-3">
+                {!activeTab.includes("Artists") && !activeTab.includes("Subscription") ? "Artist" : ""}
+              </th>
+              
+              <th className="pb-4 px-3">Type</th>
+              <th className="pb-4 px-3">
+                {activeTab.includes("Artists") ? "Followed At" : 
+                activeTab.includes("Subscription") ? "Started At" : "Saved At"}
+              </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-            {tabData.map((item, i) => (
+              {tabData.map((item, i) => (
                 <tr key={i} className="group hover:bg-white/5 transition-all">
-                <td className="py-4 px-3 font-bold text-gray-500 text-sm">{i + 1}</td>
-                <td className="py-4 px-3 text-center">
+                  <td className="py-4 px-3 font-bold text-gray-500 text-sm">{i + 1}</td>
+                  <td className="py-4 px-3 text-center">
                     <img 
-                    src={item.cover_image_url || item.cover || "https://via.placeholder.com/150"} 
-                    className="w-14 h-14 rounded-xl object-cover mx-auto shadow-md"
+                      src={item.cover_image_url || item.cover || "https://via.placeholder.com/150"} 
+                      className="w-14 h-14 rounded-xl object-cover mx-auto shadow-md"
+                      onError={(e) => { e.target.src = "https://via.placeholder.com/150" }} // กันรูปพัง
                     />
-                </td>
-                <td className="py-4 px-3 font-extrabold text-white text-[15px]">
+                  </td>
+                  
+                  {/* ชื่อหลัก */}
+                  <td className="py-4 px-3 font-extrabold text-white text-[15px]">
                     {item.album_name || item.artist_name || item.album}
+                  </td>
+                  
+                  {/* ชื่อศิลปินรอง (จะแสดงเฉพาะเมื่อไม่ใช่หน้า Artist) */}
+                  <td className="py-4 px-3 text-gray-300 font-bold text-[15px]">
+                  {/* ถ้าไม่ใช่หน้า Artists และไม่ใช่หน้า Subscription ถึงจะแสดงชื่อศิลปิน */}
+                  {!activeTab.includes("Artists") && !activeTab.includes("Subscription") 
+                    ? (item.artist_name || item.artist || "-") 
+                    : ""
+                  }
                 </td>
-                <td className="py-4 px-3 text-gray-300 font-bold text-[15px]">
-                    {item.artist_name || "-"}
-                </td>
-                <td className="py-4 px-3 text-gray-400 text-sm font-medium">
+                  
+                  <td className="py-4 px-3 text-gray-400 text-sm font-medium">
                     {item.type || "Standard"}
-                </td>
-                <td className="py-4 px-3 text-gray-500 text-sm font-medium">
+                  </td>
+                  
+                  <td className="py-4 px-3 text-gray-500 text-sm font-medium">
                     {item.saved_at ? item.saved_at.split('T')[0] : "-"}
-                </td>
+                  </td>
                 </tr>
-            ))}
+              ))}
             </tbody>
           </table>
         </div>
