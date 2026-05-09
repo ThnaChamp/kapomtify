@@ -29,6 +29,7 @@ function App() {
         <Route path="/album" element={<Album />} />
         <Route path="/album/:id/" element={<AlbumDetail />} />
         <Route path="/artist" element={<Artist />} />
+        <Route path="/artist/:id" element={<ArtistDetail />} />
         <Route path="/chart" element={<Chart />} />
         <Route path="/user" element={<Users />} />
         <Route path="/subscription-plan" element={<SubscriptionPlan />} />

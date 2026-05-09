@@ -13,7 +13,6 @@ export default function Artist() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // ตั้งค่า state สำหรับ Form เริ่มต้น
   const [formData, setFormData] = useState({
     artist_code: "",
     artist_name: "",
@@ -65,11 +64,11 @@ export default function Artist() {
         alert(`เกิดข้อผิดพลาด: ${errData.error || "ไม่สามารถบันทึกได้"}`);
       }
     } catch (err) {
-      console.error(err);
       alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
     }
   };
 
+  // --- ปรับปรุงฟังก์ชันการลบ ---
   const handleDelete = async (id) => {
     if (window.confirm("ลบศิลปินนี้?")) {
       await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, {
@@ -93,7 +92,6 @@ export default function Artist() {
           <Create text="Artist" onClick={() => setIsModalOpen(true)} />
         </div>
 
-        {/* ── Data Table ── */}
         <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden mt-2 shadow-xl flex flex-col">
           <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
             <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
@@ -163,7 +161,6 @@ export default function Artist() {
           </div>
         </div>
 
-        {/* ── Pagination ── */}
         <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
           <button
             disabled={currentPage === 1}
@@ -196,7 +193,6 @@ export default function Artist() {
         </div>
       </div>
 
-      {/* ── Modal Create (ปรับดีไซน์ใหม่) ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#282828] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl p-6">
@@ -211,7 +207,6 @@ export default function Artist() {
                 X
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
@@ -239,7 +234,6 @@ export default function Artist() {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
                   <label className="text-xs font-bold text-gray-400">
@@ -268,7 +262,6 @@ export default function Artist() {
                   </select>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">
                   Profile image
@@ -288,7 +281,6 @@ export default function Artist() {
                   </button>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">Bio</label>
                 <textarea
@@ -298,7 +290,6 @@ export default function Artist() {
                   className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954] h-20 resize-none"
                 ></textarea>
               </div>
-
               <div className="flex justify-end gap-3 mt-2 border-t border-white/10 pt-4">
                 <button
                   type="button"

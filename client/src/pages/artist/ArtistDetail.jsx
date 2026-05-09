@@ -17,15 +17,22 @@ export default function ArtistDetail() {
 
   useEffect(() => { fetchArtist(); }, [id]);
 
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm)
-    });
-    setIsEditModalOpen(false);
-    fetchArtist();
+  // --- เพิ่มฟังก์ชัน handleDelete สำหรับปุ่มลบในหน้านี้ ---
+  const handleDelete = async () => {
+    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบศิลปินท่านนี้?")) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          alert("ลบข้อมูลศิลปินเรียบร้อยแล้ว");
+          navigate('/artist'); // กลับไปหน้าตารางศิลปิน
+        } else {
+          const errData = await res.json();
+          alert(`ลบไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาด'}`);
+        }
+      } catch(err) {
+        alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      }
+    }
   };
 
   if (!artist) return <div className="p-8 text-white">Loading...</div>;
@@ -47,14 +54,13 @@ export default function ArtistDetail() {
           </div>
           <div className="flex gap-2 mt-4">
             <button onClick={() => setIsEditModalOpen(true)} className="px-6 py-1.5 border border-gray-500 rounded text-sm font-bold hover:bg-[#333]">Edit</button>
-            <button className="px-6 py-1.5 border border-red-900/50 text-red-500 text-sm font-bold rounded hover:bg-red-500/10">Delete</button>
+            {/* เรียกใช้ฟังก์ชัน handleDelete ที่สร้างขึ้นมาใหม่ */}
+            <button onClick={handleDelete} className="px-6 py-1.5 border border-red-900/50 text-red-500 text-sm font-bold rounded hover:bg-red-500/10">Delete</button>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        
-        {/* ── Box 1: Artist Info ── */}
         <div className="bg-[#2a2a2a] p-6 rounded-xl border border-white/5">
           <h3 className="font-bold text-lg mb-6">Artist Info</h3>
           <div className="text-sm space-y-4">
@@ -81,7 +87,6 @@ export default function ArtistDetail() {
           </div>
         </div>
 
-        {/* ── Box 2: Top song ── */}
         <div className="bg-[#2a2a2a] p-6 rounded-xl border border-white/5 flex flex-col">
           <h3 className="font-bold text-lg mb-6">Top song</h3>
           <div className="flex flex-col gap-4">
@@ -98,10 +103,8 @@ export default function ArtistDetail() {
           </div>
         </div>
 
-        {/* ── Box 3: List Albums ── */}
         <div className="bg-[#2a2a2a] p-6 rounded-xl border border-white/5 flex flex-col">
           <h3 className="font-bold text-lg mb-6">List Albums</h3>
-          {/* เพิ่ม overflow-y-auto ให้ Scroll ได้ถ้ารายการเยอะ */}
           <div className="flex flex-col gap-4 overflow-y-auto max-h-[220px] custom-scrollbar pr-2">
             {artist.albums && artist.albums.length > 0 ? (
               artist.albums.map((al, idx) => (
@@ -115,19 +118,15 @@ export default function ArtistDetail() {
             )}
           </div>
         </div>
-
       </div>
 
-      {/* ── Edit Modal ── */}
-     {isEditModalOpen && (
+      {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#282828] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl p-6">
-            
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-200">Edit artist</h2>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-300 hover:text-white text-lg font-bold border-b-2 border-gray-400 leading-none pb-0.5">X</button>
             </div>
-
             <form onSubmit={async (e) => {
               e.preventDefault();
               try {
@@ -139,13 +138,12 @@ export default function ArtistDetail() {
                 if (res.ok) {
                   alert("แก้ไขข้อมูลเรียบร้อย");
                   setIsEditModalOpen(false);
-                  fetchArtist(); // รีเฟรชข้อมูลหน้าเว็บ
+                  fetchArtist(); 
                 } else {
                   alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
                 }
               } catch(err) { console.error(err); }
             }} className="flex flex-col gap-4">
-              
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
                   <label className="text-xs font-bold text-gray-400">Code</label>
@@ -156,7 +154,6 @@ export default function ArtistDetail() {
                   <input name="artist_name" value={editForm.artist_name || ''} onChange={e => setEditForm({...editForm, artist_name: e.target.value})} className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954]"/>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
                   <label className="text-xs font-bold text-gray-400">Debut year</label>
@@ -170,7 +167,6 @@ export default function ArtistDetail() {
                   </select>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">Profile</label>
                 <div className="flex bg-[#333333] border border-gray-500 rounded-lg items-center px-2 py-1">
@@ -178,17 +174,14 @@ export default function ArtistDetail() {
                   <button type="button" className="px-4 py-1 border border-white text-white rounded-lg text-xs font-bold hover:bg-white/10">Upload</button>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">Bio</label>
                 <textarea name="bio" value={editForm.bio || ''} onChange={e => setEditForm({...editForm, bio: e.target.value})} className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954] h-20 resize-none"></textarea>
               </div>
-
               <div className="flex justify-end gap-3 mt-2 border-t border-white/10 pt-4">
                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-6 py-2 rounded-xl border border-white text-white text-sm font-bold hover:bg-white/5 active:scale-95 transition-all">Cancel</button>
                 <button type="submit" className="px-6 py-2 rounded-xl border border-[#1DB954] text-[#1DB954] text-sm font-bold hover:bg-[#1DB954]/10 active:scale-95 transition-all">Save Changes</button>
               </div>
-
             </form>
           </div>
         </div>
