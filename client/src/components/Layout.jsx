@@ -47,7 +47,7 @@ const NAV = [
   { 
     group: "USERS", 
     items: [
-      { id: "users", label: "Users", icon: <UsersIcon />, path: "/user" }, 
+      { id: "users", label: "Users", icon: <UsersIcon />, path: "/users" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription-plan" }, 
       { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlist" },
       { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" } // เพิ่มใหม่
