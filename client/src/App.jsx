@@ -9,6 +9,7 @@ import AlbumDetail from './pages/music_album/AlbumDetail';
 import Artist from './pages/artist/Artist';
 import Chart from './pages/chart/Chart';
 import Users from "./pages/users/Users";
+import UsersDetail from "./pages/users/UserDetail";
 import SubscriptionPlans from './pages/subscription_plan/SubscriptionPlans';
 import Playlists from "./pages/playlists/Playlists";
 import PlaylistDetail from "./pages/playlists/PlaylistDetail";

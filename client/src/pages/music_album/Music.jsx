@@ -57,21 +57,6 @@ export default function MusicPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isModalOpen]);
-
   // --- Fetch Data Functions ---
   useEffect(() => {
     const fetchGenres = async () => {
