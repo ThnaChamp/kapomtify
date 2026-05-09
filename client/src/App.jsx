@@ -32,9 +32,9 @@ function App() {
           <Route path="/charts" element={<Chart/>} />
           <Route path="/users" element={<Users/>} />
           <Route path="/users/:id" element={<UsersDetail/>} />
-          <Route path="/subscription" element={<SubscriptionPlans/>} />
-          <Route path="/playlists" element={<Playlists/>} />
-          <Route path="/playlists/:id" element={<PlaylistDetail/>} />
+          <Route path="/subscription-plan" element={<SubscriptionPlans/>} />
+          <Route path="/playlist" element={<Playlists/>} />
+          <Route path="/playlist/:id" element={<PlaylistDetail/>} />
           <Route path="/transactions" element={<Transaction/>} />
           <Route path="/reports/overview" element={<Overview/>} />
           <Route path="/reports/content" element={<Content/>} />
