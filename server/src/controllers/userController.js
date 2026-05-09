@@ -4,7 +4,7 @@ const getAllUsers = async (req, res) => {
     try {
         const { search, plan} = req.query;
         const page = parseInt(req.query.page) || 1;
-        const limit = 20;
+        const limit = 7;
         const offset = (page - 1) * limit;
 
         let conditions =[];

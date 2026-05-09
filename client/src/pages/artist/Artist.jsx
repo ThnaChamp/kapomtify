@@ -11,7 +11,6 @@ export default function Artist() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // ตั้งค่า state สำหรับ Form เริ่มต้น
   const [formData, setFormData] = useState({
     artist_code: '', artist_name: '', debut_year: '', verified_status: 'No', profile_image_url: '', bio: ''
   });
@@ -38,7 +37,6 @@ export default function Artist() {
       if (res.ok) {
         alert("เพิ่มข้อมูลศิลปินเรียบร้อยแล้ว!");
         setIsModalOpen(false);
-        // เคลียร์ฟอร์ม
         setFormData({ artist_code: '', artist_name: '', debut_year: '', verified_status: 'No', profile_image_url: '', bio: '' });
         fetchArtists();
       } else {
@@ -46,22 +44,30 @@ export default function Artist() {
         alert(`เกิดข้อผิดพลาด: ${errData.error || 'ไม่สามารถบันทึกได้'}`);
       }
     } catch (err) {
-      console.error(err);
       alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
     }
   };
 
+  // --- ปรับปรุงฟังก์ชันการลบ ---
   const handleDelete = async (id) => {
-    if (window.confirm("ลบศิลปินนี้?")) {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, { method: 'DELETE' });
-      fetchArtists();
+    if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบศิลปินท่านนี้?")) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          alert("ลบข้อมูลศิลปินเรียบร้อยแล้ว");
+          fetchArtists();
+        } else {
+          const errData = await res.json();
+          alert(`ลบไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาด'}`);
+        }
+      } catch(err) {
+        alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      }
     }
   };
 
   return (
     <div className="flex flex-col gap-5 p-0 text-[#e0e0e0] font-sans">
-      
-      {/* ── Toolbar ── */}
       <div className="px-8 flex flex-col gap-5 pt-8">
         <div className="flex justify-between items-center mt-2">
           <div className="flex gap-3 items-center">
@@ -77,7 +83,6 @@ export default function Artist() {
           </button>
         </div>
 
-        {/* ── Data Table ── */}
         <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden mt-2 shadow-xl flex flex-col">
           <div className="overflow-y-auto max-h-[500px] custom-scrollbar">
             <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
@@ -117,7 +122,6 @@ export default function Artist() {
           </div>
         </div>
 
-        {/* ── Pagination ── */}
         <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
           <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}>‹</button>
           {[...Array(totalPages)].map((_, index) => {
@@ -132,16 +136,13 @@ export default function Artist() {
         </div>
       </div>
 
-      {/* ── Modal Create (ปรับดีไซน์ใหม่) ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#282828] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl p-6">
-            
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-200">Create new artist</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-300 hover:text-white text-lg font-bold border-b-2 border-gray-400 leading-none pb-0.5">X</button>
             </div>
-
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
@@ -153,7 +154,6 @@ export default function Artist() {
                   <input name="artist_name" value={formData.artist_name} onChange={handleChange} className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954]" required/>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 text-left">
                   <label className="text-xs font-bold text-gray-400">Debut year</label>
@@ -167,7 +167,6 @@ export default function Artist() {
                   </select>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">Profile image</label>
                 <div className="flex bg-[#333333] border border-gray-500 rounded-lg items-center px-2 py-1">
@@ -175,17 +174,14 @@ export default function Artist() {
                   <button type="button" className="px-4 py-1 border border-white text-white rounded-lg text-xs font-bold hover:bg-white/10">Upload</button>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-bold text-gray-400">Bio</label>
                 <textarea name="bio" value={formData.bio} onChange={handleChange} className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954] h-20 resize-none"></textarea>
               </div>
-
               <div className="flex justify-end gap-3 mt-2 border-t border-white/10 pt-4">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-xl border border-white text-white text-sm font-bold hover:bg-white/5 active:scale-95 transition-all">Cancel</button>
                 <button type="submit" className="px-6 py-2 rounded-xl border border-[#1DB954] text-[#1DB954] text-sm font-bold hover:bg-[#1DB954]/10 active:scale-95 transition-all">Create</button>
               </div>
-
             </form>
           </div>
         </div>

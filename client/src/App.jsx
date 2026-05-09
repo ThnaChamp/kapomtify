@@ -1,26 +1,25 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Auth from "./pages/auth/Auth";
-import Dashboard from './pages/dashboard/Dashboard';
+import Dashboard from "./pages/dashboard/Dashboard";
 import Music from "./pages/music_album/Music";
-import MusicDetail from "./pages/music_album/MusicDetail"
-import Album from './pages/music_album/Album';
-import AlbumDetail from './pages/music_album/AlbumDetail';
-import Artist from './pages/artist/Artist';
-import Chart from './pages/chart/Chart';
+import MusicDetail from "./pages/music_album/MusicDetail";
+import Album from "./pages/music_album/Album";
+import AlbumDetail from "./pages/music_album/AlbumDetail";
+import Artist from "./pages/artist/Artist";
+import ArtistDetail from "./pages/artist/ArtistDetail";
+import Chart from "./pages/chart/Chart";
 import Users from "./pages/users/Users";
 import UsersDetail from "./pages/users/UserDetail";
-import SubscriptionPlans from './pages/subscription_plan/SubscriptionPlans';
+import SubscriptionPlan from "./pages/subscription_plan/SubscriptionPlans";
 import Playlists from "./pages/playlists/Playlists";
 import PlaylistDetail from "./pages/playlists/PlaylistDetail";
-import Transaction from './pages/transaction/Transaction';
-import Overview from './pages/report/Overview';
-import Content from './pages/report/Content';
-import Recommendation from './pages/report/Recommendation';
-import ArtistDetail from './pages/artist/ArtistDetail';
+import Transaction from "./pages/transaction/Transaction";
+import Overview from "./pages/report/Overview";
+import Content from "./pages/report/Content";
+import Recommendation from "./pages/report/Recommendation";
 
 function App() {
-
   return (
       <Routes>
         <Route element={<Layout/>}>
@@ -46,4 +45,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
