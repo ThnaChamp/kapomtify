@@ -15,4 +15,9 @@ router.get("/:id", artistController.getArtistDetail);
 router.put("/:id", artistController.updateArtist);
 router.delete("/:id", artistController.deleteArtist);
 
+router.get('/', albumController.getAllAlbums);
+router.post('/',albumController.createAlbum);
+router.delete('/:id',albumController.deleteAlbum);
+router.get('/:id', albumController.getAlbumById);
+router.put('/:id', albumController.updateAlbum);
 module.exports = router;
