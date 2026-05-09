@@ -237,8 +237,14 @@ export default function MusicPage() {
           <div className="flex justify-between items-center mt-2">
             <div className="flex gap-3 items-center">
               <div className="relative">
-                <SearchBox placeholder="Search music..." />
+                <SearchBox
+                  placeholder="Search musics..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
               </div>
+              <div className="relative">
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`flex items-center gap-2 px-4 py-1.5 bg-transparent border rounded-md text-sm transition-colors ${
@@ -283,6 +289,7 @@ export default function MusicPage() {
                   ))}
                 </div>
               )}
+              </div>
             </div>
             <Create text="Music" onClick={() => setIsModalOpen(true)} />
           </div>
