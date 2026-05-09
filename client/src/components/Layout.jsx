@@ -128,7 +128,7 @@ function Sidebar({ isOpen, onClose }) {
 /* ── Header Component ─────────────────────────────────────────────────────── */
 function Header({ title, onMenuClick }) {
   return (
-    <header className="flex items-center justify-between px-6 h-15 bg-[#1e1e1e] border-b border-[#2a2a2a] shrink-0 gap-3">
+    <header className="flex items-center justify-between px-6 h-17.25 bg-[#1e1e1e] border-b border-[#2a2a2a] shrink-0 gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
         <button className="md:hidden text-gray-400 p-1.5 rounded-md hover:bg-white/10 transition" onClick={onMenuClick}>
           <HamburgerIcon />
