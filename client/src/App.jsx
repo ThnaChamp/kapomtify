@@ -13,10 +13,11 @@ import UsersDetail from "./pages/users/UserDetail";
 import SubscriptionPlans from "./pages/subscription_plan/SubscriptionPlans";
 import Playlists from "./pages/playlists/Playlists";
 import PlaylistDetail from "./pages/playlists/PlaylistDetail";
-import Transaction from "./pages/transaction/Transaction";
-import Overview from "./pages/report/Overview";
-import Content from "./pages/report/Content";
-import Recommendation from "./pages/report/Recommendation";
+import Transaction from "./page/transaction/Transaction";
+import Overview from "./page/report/Overview";
+import Content from "./page/report/Content";
+import Recommendation from "./page/report/Recommendation";
+import ArtistDetail from "./page/artist/ArtistDetail";
 
 function App() {
   return (
