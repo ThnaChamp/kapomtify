@@ -9,6 +9,7 @@ import AlbumDetail from "./pages/music_album/AlbumDetail";
 import Artist from "./pages/artist/Artist";
 import ArtistDetail from "./pages/artist/ArtistDetail";
 import Chart from "./pages/chart/Chart";
+import ChartDetail from "./pages/chart/ChartDetail";
 import User from "./pages/users/User";
 import UsersDetail from "./pages/users/UserDetail";
 import SubscriptionPlan from "./pages/subscription_plan/SubscriptionPlans";
@@ -31,6 +32,7 @@ function App() {
         <Route path="/artist" element={<Artist />} />
         <Route path="/artist/:id" element={<ArtistDetail />} />
         <Route path="/chart" element={<Chart />} />
+        <Route path="/chart/:id" element={<ChartDetail />} />
         <Route path="/user" element={<User />} />
         <Route path="/subscription-plan" element={<SubscriptionPlan />} />
         <Route path="/playlist" element={<Playlists />} />
