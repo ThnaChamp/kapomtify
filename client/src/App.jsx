@@ -30,15 +30,16 @@ function App() {
           <Route path="/album" element={<Album/>} />
           <Route path="/album/:id/" element={<AlbumDetail/>}/>
           <Route path="/artist" element={<Artist/>} />
+          <Route path="/artist/:id" element={<ArtistDetail/>} />
           <Route path="/chart" element={<Chart/>} />
-          <Route path="/user" element={<Users/>} />
-          <Route path="/subscription" element={<SubscriptionPlans/>} />
+          <Route path="/users" element={<Users/>} />
+          <Route path="/subscription-plan" element={<SubscriptionPlans/>} />
           <Route path="/playlist" element={<Playlists/>} />
           <Route path="/playlist/:id" element={<PlaylistDetail/>} />
           <Route path="/transaction" element={<Transaction/>} />
-          <Route path="/report/overview" element={<Overview/>} />
-          <Route path="/report/content" element={<Content/>} />
-          <Route path="/report/recommendation" element={<Recommendation/>} />
+          <Route path="/reports/overview" element={<Overview/>} />
+          <Route path="/reports/content" element={<Content/>} />
+          <Route path="/reports/recommendation" element={<Recommendation/>} />
         </Route>
         <Route path="/auth" element={<Auth/>} />
       </Routes>
