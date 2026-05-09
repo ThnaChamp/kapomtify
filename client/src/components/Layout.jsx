@@ -47,7 +47,7 @@ const NAV = [
   { 
     group: "USERS", 
     items: [
-      { id: "users", label: "Users", icon: <UsersIcon />, path: "/users" }, 
+      { id: "users", label: "Users", icon: <UsersIcon />, path: "/user" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription-plan" }, 
       { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlist" },
       { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" } // เพิ่มใหม่
@@ -56,9 +56,9 @@ const NAV = [
   { 
     group: "REPORTS", 
     items: [
-      { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/reports/overview" },
-      { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/reports/content" },
-      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/reports/recommendation" } // เพิ่มใหม่
+      { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/report/overview" },
+      { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/report/content" },
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/report/recommendation" } // เพิ่มใหม่
     ] 
   },
 ];
