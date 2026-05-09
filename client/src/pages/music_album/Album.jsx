@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-/* ── Icons ──────────────────────────────────────────────────────────────── */
-const PlusIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const FilterIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>;
+import SearchBox from '../../components/searchBox';
+import Filter from '../../components/filterBtn';
+import Create from '../../components/createBtn';
+import Cancel from '../../components/cancelBtn';
+import CreateM from "../../components/createMBtn";
 
 export default function AlbumPage() {
   const navigate = useNavigate();
@@ -130,21 +131,15 @@ export default function AlbumPage() {
       <div className="px-8 flex flex-col gap-5">
         <div className="flex justify-between items-center mt-2">
           <div className="flex gap-3 items-center">
-            <input
-              type="text"
+            <SearchBox
               placeholder="Search albums..."
-              className="bg-[#242424] border border-[#444] rounded-md py-1.5 px-4 text-sm w-48 focus:outline-none focus:border-[#1DB954]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-            <button className="flex items-center gap-2 px-4 py-1.5 bg-transparent border border-[#444] rounded-md text-sm text-gray-300 hover:border-gray-500">
-              <FilterIcon /> Filter
-            </button>
+            <Filter />
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-4 py-2 rounded-md text-sm transition-transform active:scale-95">
-            <PlusIcon /> Create album
-          </button>
+          <Create text="Album" onClick={() => setIsModalOpen(true)} />
         </div>
 
         {/* ── Data Table ── */}
