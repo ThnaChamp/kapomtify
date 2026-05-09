@@ -50,7 +50,7 @@ const NAV = [
       { id: "users", label: "Users", icon: <UsersIcon />, path: "/user" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription-plan" }, 
       { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlist" },
-      { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" } // เพิ่มใหม่
+      { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" }
     ] 
   },
   { 
@@ -58,7 +58,7 @@ const NAV = [
     items: [
       { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/report/overview" },
       { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/report/content" },
-      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/report/recommendation" } // เพิ่มใหม่
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/report/recommendation" }
     ] 
   },
 ];
