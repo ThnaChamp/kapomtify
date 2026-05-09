@@ -215,51 +215,42 @@ const handleKeyDown = (e) => {
                 <div className="relative">
                   <SearchBox placeholder="Search music..." />
                 </div>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="bg-[#242424] border border-[#444] rounded-md py-1.5 px-4 text-sm w-48 focus:outline-none focus:border-[#1DB954]"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                    onKeyDown={handleKeyDown}
-                  />
+                  <button 
+                      onClick={() => setIsFilterOpen(!isFilterOpen)}
+                      className={`flex items-center gap-2 px-4 py-1.5 bg-transparent border rounded-md text-sm transition-colors ${
+                          selectedGenre ? "border-[#1DB954] text-[#1DB954]" : "border-[#444] text-gray-300"
+                      } hover:border-gray-500`}
+                  >
+                      <FilterIcon /> 
+                      {selectedGenre ? allGenres.find(g => g.genre_id == selectedGenre)?.genre_name : "Filter"}
+                  </button>
+                  {isFilterOpen && (
+                      <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2 animate-in fade-in zoom-in duration-150">
+                          <button 
+                              onClick={() => { setSelectedGenre(""); setIsFilterOpen(false); }}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-[#333] rounded-md"
+                          >
+                              All Genres
+                          </button>
+                          <div className="h-[1px] bg-[#333] my-1" />
+                          {allGenres.map(genre => (
+                              <button
+                                  key={genre.genre_id}
+                                  onClick={() => {
+                                      setSelectedGenre(genre.genre_id);
+                                      setIsFilterOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                                      selectedGenre == genre.genre_id ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"
+                                  }`}
+                              >
+                                  {genre.genre_name}
+                              </button>
+                          ))}
+                      </div>)}
                 </div>
-                <div className="relative">
-                    <button 
-                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={`flex items-center gap-2 px-4 py-1.5 bg-transparent border rounded-md text-sm transition-colors ${
-                            selectedGenre ? "border-[#1DB954] text-[#1DB954]" : "border-[#444] text-gray-300"
-                        } hover:border-gray-500`}
-                    >
-                        <FilterIcon /> 
-                        {selectedGenre ? allGenres.find(g => g.genre_id == selectedGenre)?.genre_name : "Filter"}
-                    </button>
-                    {isFilterOpen && (
-                        <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2 animate-in fade-in zoom-in duration-150">
-                            <button 
-                                onClick={() => { setSelectedGenre(""); setIsFilterOpen(false); }}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-[#333] rounded-md"
-                            >
-                                All Genres
-                            </button>
-                            <div className="h-[1px] bg-[#333] my-1" />
-                            {allGenres.map(genre => (
-                                <button
-                                    key={genre.genre_id}
-                                    onClick={() => {
-                                        setSelectedGenre(genre.genre_id);
-                                        setIsFilterOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                                        selectedGenre == genre.genre_id ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"
-                                    }`}
-                                >
-                                    {genre.genre_name}
-                                </button>
-                            ))}
-                        </div>)}</div>
+                <Create text="Music" onClick={() => setIsModalOpen(true)}/>
               </div>
-              <Create text="Music" onClick={() => setIsModalOpen(true)}/>
             </div>
 
             {/* ── Data Table ── */}
