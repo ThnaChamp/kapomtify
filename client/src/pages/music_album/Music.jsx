@@ -32,6 +32,10 @@ export default function MusicPage() {
   const [albums, setAlbums] = useState([]);
   const [artists, setArtists] = useState([]);
   const [allGenres, setAllGenres] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -59,34 +63,72 @@ export default function MusicPage() {
 
   useEffect(() => {
     const loadOptions = async () => {
-      const [albumRes, artistRes] = await Promise.all([
+      try{
+        const [albumRes, artistRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/api/albums`),
         fetch(`${import.meta.env.VITE_API_URL}/api/artists`)
       ]);
-      setAlbums(await albumRes.json());
-      setArtists(await artistRes.json());
-    };
+      const albumData = await albumRes.json();
+      const artistData = await artistRes.json();
+
+      setAlbums(albumData.data || albumData); 
+      setArtists(artistData.data || artistData);
+    }catch (error) {
+      console.error("Error loading options:", error);
+    }};
     loadOptions();
   }, []);
 
   const fetchMusic = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/music?page=${currentPage}`);
-      const result = await response.json();
-      setMusic(result.data);
-      setTotalPages(result.pagination.totalPages || 1);
-    } catch (error) {
-      console.error("Error fetching music:", error);
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/music?page=${currentPage}&search=${searchQuery}&genreId=${selectedGenre}`
+    );
+
+    // ถ้า Server ส่ง 500 กลับมา ให้หยุดทำงานและแจ้งเตือน
+    if (!response.ok) {
+      throw new Error(`Server Error: ${response.status}`);
     }
-  };
+
+    const result = await response.json();
+
+    // ✅ ใช้ Optional Chaining (?.) เพื่อป้องกันการอ่านค่าจาก undefined
+    // และใส่ค่า Default (||) ไว้เสมอ
+    const musicData = result?.data || [];
+    const totalPagesCount = result?.pagination?.totalPages || 1;
+
+    setMusic(musicData);
+    setTotalPages(totalPagesCount);
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    // ✅ ถ้า Error ให้ Reset ค่าเป็นสถานะที่ปลอดภัย หน้าเว็บจะได้ไม่พัง
+    setMusic([]);
+    setTotalPages(1);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    fetchMusic();
-  }, [currentPage]);
+    // ใช้ Debounce เพื่อไม่ให้ยิง API ถี่เกินไปตอนพิมพ์
+    const delay = setTimeout(() => {
+        fetchMusic();
+    }, 500); 
 
+    return () => clearTimeout(delay);
+}, [currentPage, searchQuery,selectedGenre]);
+
+useEffect(() => {
+    setCurrentPage(1);
+}, [selectedGenre]);
+const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+        setSearchQuery(searchTerm); // เมื่อกด Enter ให้เอาสิ่งที่พิมพ์ไปใส่ใน searchQuery
+        setCurrentPage(1); // กลับไปหน้าแรกทุกครั้งที่เริ่มค้นหาใหม่
+    }
+};
   // --- Event Handlers ---
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -144,27 +186,27 @@ export default function MusicPage() {
     }
   };
 
-  if (loading) {
-    return <div className="p-8 text-white">Loading music library...</div>;
-  }
-
+ 
   return (
     <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
         <>
           {/* ── Tabs ── */}
           <div className="flex gap-8 border-b border-[#333] pl-8 pt-3">
-            {["Music", "Album"].map((tab) => (
-              <button
-                key={tab}
-                onClick= {() => navigate(`/music/${m.music_id}`)}
-                className={`pb-3 text-sm font-semibold transition-all ${
-                  activeTab === tab ? "text-[#1DB954] border-b-2 border-[#1DB954]" : "text-gray-400"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          {["Music", "Album"].map((tab) => (
+            <button
+              key={tab}
+              // ✅ แก้ไข: navigate ไปยัง path ที่เป็นตัวพิมพ์เล็กตามชื่อ tab
+              onClick={() => navigate(`/${tab.toLowerCase()}`)} 
+              className={`pb-3 text-sm font-semibold transition-all ${
+                activeTab === tab 
+                  ? "text-[#1DB954] border-b-2 border-[#1DB954]" 
+                  : "text-gray-400"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
           {/* ── Toolbar ── */}
           <div className="px-8 flex flex-col gap-5">
@@ -173,7 +215,49 @@ export default function MusicPage() {
                 <div className="relative">
                   <SearchBox placeholder="Search music..." />
                 </div>
-                <Filter />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="bg-[#242424] border border-[#444] rounded-md py-1.5 px-4 text-sm w-48 focus:outline-none focus:border-[#1DB954]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+                <div className="relative">
+                    <button 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={`flex items-center gap-2 px-4 py-1.5 bg-transparent border rounded-md text-sm transition-colors ${
+                            selectedGenre ? "border-[#1DB954] text-[#1DB954]" : "border-[#444] text-gray-300"
+                        } hover:border-gray-500`}
+                    >
+                        <FilterIcon /> 
+                        {selectedGenre ? allGenres.find(g => g.genre_id == selectedGenre)?.genre_name : "Filter"}
+                    </button>
+                    {isFilterOpen && (
+                        <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2 animate-in fade-in zoom-in duration-150">
+                            <button 
+                                onClick={() => { setSelectedGenre(""); setIsFilterOpen(false); }}
+                                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-[#333] rounded-md"
+                            >
+                                All Genres
+                            </button>
+                            <div className="h-[1px] bg-[#333] my-1" />
+                            {allGenres.map(genre => (
+                                <button
+                                    key={genre.genre_id}
+                                    onClick={() => {
+                                        setSelectedGenre(genre.genre_id);
+                                        setIsFilterOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                                        selectedGenre == genre.genre_id ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"
+                                    }`}
+                                >
+                                    {genre.genre_name}
+                                </button>
+                            ))}
+                        </div>)}</div>
               </div>
               <Create text="Music" onClick={() => setIsModalOpen(true)}/>
             </div>
@@ -194,7 +278,17 @@ export default function MusicPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#333]">
-                    {music.map((m, i) => (
+                    {loading ? (
+                    // ✅ แสดง Skeleton แทนคำว่า Loading
+                    [...Array(5)].map((_, index) => (
+                      <tr key={index} className="animate-pulse h-[64px]">
+                        <td colSpan="7" className="px-6 py-5">
+                          <div className="h-4 bg-[#333] rounded w-full"></div>
+                        </td>
+                      </tr>
+                    ))
+                    ) : music.length > 0 ? (
+                        music.map((m, i) => (
                       <tr key={m.music_id || i} className="hover:bg-[#2a2a2a] transition-colors group h-[64px]">
                         <td className="px-6 py-5 text-sm font-bold text-gray-300">{(currentPage - 1) * 20 + (i + 1)}</td>
                         <td className="px-6 py-5 text-sm font-bold text-gray-300">{m.music_code}</td>
@@ -216,7 +310,14 @@ export default function MusicPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ))
+                    ) : (
+                      <tr>
+                      <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                        No music found
+                      </td>
+                    </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -259,7 +360,6 @@ export default function MusicPage() {
                 »
               </button>
             </div>
-          </div>
         </>
 
       {/* ── Modal Create ── */}
@@ -308,9 +408,14 @@ export default function MusicPage() {
                   required
                 >
                   <option value="">Select Album</option>
-                  {albums.map(alb => (
-                    <option key={alb.album_id} value={alb.album_id}>{alb.album_name}</option>
-                  ))}
+                  {Array.isArray(albums) && albums.map(alb => {
+                    console.log("Check alb item:", alb); // 👈 เพิ่มบรรทัดนี้เพื่อดูชื่อ property ใน Console
+                    return (
+                      <option key={alb.album_id} value={alb.album_id}>
+                        {alb.album_name}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

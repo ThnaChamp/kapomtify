@@ -25,3 +25,20 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #1DB954;
 }
+/* ปรับแต่ง Scrollbar ให้มีขนาดเล็กมาก */
+.custom-scrollbar-tiny::-webkit-scrollbar {
+  width: 4px; /* ขนาดความกว้างของ scrollbar */
+}
+
+.custom-scrollbar-tiny::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+.custom-scrollbar-tiny::-webkit-scrollbar-thumb {
+  background: #555; /* สีของแถบเลื่อน */
+  border-radius: 10px;
+}
+
+.custom-scrollbar-tiny::-webkit-scrollbar-thumb:hover {
+  background: #1DB954; /* เปลี่ยนเป็นสีเขียวเมื่อ hover */
+}
