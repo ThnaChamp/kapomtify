@@ -17,6 +17,7 @@ import Transaction from './pages/transaction/Transaction';
 import Overview from './pages/report/Overview';
 import Content from './pages/report/Content';
 import Recommendation from './pages/report/Recommendation';
+import ArtistDetail from './pages/artist/ArtistDetail';
 
 function App() {
 
@@ -28,17 +29,16 @@ function App() {
           <Route path="/music/:id/" element={<MusicDetail/>}/>
           <Route path="/album" element={<Album/>} />
           <Route path="/album/:id/" element={<AlbumDetail/>}/>
-          <Route path="/artists" element={<Artist/>} />
-          <Route path="/charts" element={<Chart/>} />
-          <Route path="/users" element={<Users/>} />
-          <Route path="/users/:id" element={<UsersDetail/>} />
-          <Route path="/subscription-plan" element={<SubscriptionPlans/>} />
+          <Route path="/artist" element={<Artist/>} />
+          <Route path="/chart" element={<Chart/>} />
+          <Route path="/user" element={<Users/>} />
+          <Route path="/subscription" element={<SubscriptionPlans/>} />
           <Route path="/playlist" element={<Playlists/>} />
           <Route path="/playlist/:id" element={<PlaylistDetail/>} />
-          <Route path="/transactions" element={<Transaction/>} />
-          <Route path="/reports/overview" element={<Overview/>} />
-          <Route path="/reports/content" element={<Content/>} />
-          <Route path="/reports/recommendation" element={<Recommendation/>} />
+          <Route path="/transaction" element={<Transaction/>} />
+          <Route path="/report/overview" element={<Overview/>} />
+          <Route path="/report/content" element={<Content/>} />
+          <Route path="/report/recommendation" element={<Recommendation/>} />
         </Route>
         <Route path="/auth" element={<Auth/>} />
       </Routes>

@@ -60,6 +60,7 @@ export default function MusicPage() {
   // --- Fetch Data Functions ---
   useEffect(() => {
     const fetchGenres = async () => {
+      console.log("ค่าจาก ENV:", import.meta.env.VITE_API_URL);
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/genres`);
       const data = await res.json();
       setAllGenres(data);
