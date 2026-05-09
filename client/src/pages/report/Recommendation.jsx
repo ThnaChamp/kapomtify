@@ -129,123 +129,237 @@ const RecommendationAnalytics = () => {
   const handleExportPDF = () => {
     setExporting('pdf');
     try {
+      if (!window.jspdf) throw new Error('jsPDF not loaded');
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const green = [29, 185, 84];
-      const dark = [18, 18, 18];
-      const gray = [160, 160, 160];
 
-      /* background */
-      doc.setFillColor(...dark);
-      doc.rect(0, 0, 210, 297, 'F');
+      // ── safe number formatter (ASCII only, no Unicode separators) ──
+      const fmtNum = (n) => {
+        const num = Math.round(Number(n) || 0);
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      };
 
-      /* header bar */
-      doc.setFillColor(...green);
-      doc.rect(0, 0, 210, 14, 'F');
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RECOMMENDATION ANALYTICS', 14, 9.5);
+      // ── ASCII-safe string (strip non-latin chars jsPDF can't render) ─
+      const safe = (str = '') =>
+        String(str)
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')   // strip diacritics
+          .replace(/[^\x20-\x7E]/g, '')      // keep printable ASCII only
+          .trim();
 
-      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-      doc.setFontSize(8);
-      doc.text(dateStr, 196, 9.5, { align: 'right' });
+      // ── months lookup (ASCII) ─────────────────────────────────────
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-      let y = 26;
+      // ── color palette ─────────────────────────────────────────────
+      const C = {
+        green:   [29, 185, 84],
+        dark:    [13, 13, 13],
+        card:    [28, 28, 28],
+        panel:   [38, 38, 38],
+        white:   [230, 230, 230],
+        gray:    [130, 130, 130],
+        dimgray: [80, 80, 80],
+        black:   [0, 0, 0],
+        yellow:  [251, 191, 36],
+        silver:  [148, 163, 184],
+        amber:   [180, 120, 40],
+      };
 
-      /* ─ Efficiency section ─ */
-      doc.setFillColor(30, 30, 30);
-      doc.roundedRect(12, y - 6, 186, 8, 2, 2, 'F');
-      doc.setTextColor(...green);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('⚡  RECOMMENDATION EFFICIENCY', 18, y - 0.5);
-      doc.setTextColor(...gray);
-      doc.setFontSize(7);
-      doc.text('Play Count / Recommend Users', 192, y - 0.5, { align: 'right' });
-      y += 8;
+      const W = 210, H = 297, PAD = 12, INNER = W - PAD * 2;
+
+      // ── drawing helpers ───────────────────────────────────────────
+      const fill  = (...c)            => doc.setFillColor(...c);
+      const ink   = (...c)            => doc.setTextColor(...c);
+      const sz    = (n)               => doc.setFontSize(n);
+      const bold  = (n)               => { doc.setFont('helvetica', 'bold');   sz(n); };
+      const norm  = (n)               => { doc.setFont('helvetica', 'normal'); sz(n); };
+      const rect  = (x,y,w,h,m='F')  => doc.rect(x, y, w, h, m);
+      const rrect = (x,y,w,h,r=2.5)  => doc.roundedRect(x, y, w, h, r, r, 'F');
+      const txt   = (s,x,y,o={})     => doc.text(safe(s), x, y, o);
+      const hline = (x1,y1,x2,c=C.dimgray) => {
+        doc.setDrawColor(...c); doc.line(x1, y1, x2, y1);
+      };
+
+      // ── PAGE BG ───────────────────────────────────────────────────
+      fill(...C.dark); rect(0, 0, W, H);
+
+      // ── TOP HEADER ────────────────────────────────────────────────
+      fill(...C.green); rect(0, 0, W, 16);
+      ink(...C.black); bold(10.5);
+      txt('RECOMMENDATION ANALYTICS', PAD, 10.5);
+
+      const now = new Date();
+      const dateStr = MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      norm(8); ink(...C.black);
+      txt(dateStr, W - PAD, 10.5, { align: 'right' });
+
+      // ── SUB-HEADER (period info) ──────────────────────────────────
+      fill(...C.panel); rect(0, 16, W, 9);
+      const mon = Number(tempFilters.month);
+      const yr  = tempFilters.year;
+      const periodTxt = (mon > 0 && yr !== '0')
+        ? 'Period: ' + MONTHS[mon - 1] + ' ' + yr
+        : 'Period: All time';
+      norm(7); ink(...C.gray);
+      txt(periodTxt, PAD, 22);
+      txt('Exported: ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), W - PAD, 22, { align: 'right' });
+
+      let y = 34;
+
+      // ── SECTION HEADER helper ─────────────────────────────────────
+      const sectionHeader = (title, sub) => {
+        // full-width panel bg
+        fill(...C.panel); rect(PAD, y, INNER, 9);
+        // green left accent
+        fill(...C.green); rect(PAD, y, 3, 9);
+        // title text
+        ink(...C.white); bold(8.5);
+        txt(title, PAD + 6, y + 6);
+        // sub text right
+        if (sub) { ink(...C.gray); norm(6.5); txt(sub, W - PAD, y + 6, { align: 'right' }); }
+        y += 13;
+      };
+
+      // ════════════════════════════════════════════════════════
+      // SECTION 1 — EFFICIENCY
+      // ════════════════════════════════════════════════════════
+      sectionHeader('RECOMMENDATION EFFICIENCY', 'Play Count / Recommend Users');
+
+      const rankLabels = ['#1', '#2', '#3'];
+      const rankColors = [C.yellow, C.silver, C.amber];
+      const GAP_EFF    = 4;
+      const effCardW   = (INNER - GAP_EFF * 2) / 3;   // 3 cards
+      const effCardH   = 56;
+
+      const maxEff = Math.max(...data.efficiency.map(d => Number(d.efficiency_score) || 0), 1);
 
       data.efficiency.forEach((item, idx) => {
-        const x = 12 + idx * 63;
-        doc.setFillColor(42, 42, 42);
-        doc.roundedRect(x, y, 60, 42, 3, 3, 'F');
+        const cx = PAD + idx * (effCardW + GAP_EFF);
 
-        doc.setTextColor(...gray);
-        doc.setFontSize(6.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text((item.artist_name || '').toUpperCase(), x + 5, y + 7);
+        // ── card background ──────────────────────────────────
+        fill(...C.card); rrect(cx, y, effCardW, effCardH);
 
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.text(item.title || '', x + 5, y + 14, { maxWidth: 50 });
+        // ── green top accent line ────────────────────────────
+        fill(...C.green); rect(cx, y, effCardW, 1.2);
 
-        doc.setTextColor(...gray);
-        doc.setFontSize(6);
-        doc.text('EFFICIENCY SCORE', x + 5, y + 24);
-        doc.setTextColor(...green);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formatNumber(item.efficiency_score), x + 5, y + 32);
+        // ── rank badge (top-right) ───────────────────────────
+        fill(...rankColors[idx]);
+        rrect(cx + effCardW - 13, y + 3.5, 11, 5.5, 1.5);
+        ink(...C.black); bold(6);
+        txt(rankLabels[idx], cx + effCardW - 7.5, y + 7.5, { align: 'center' });
 
-        doc.setTextColor(...gray);
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.text('REC. USERS', x + 38, y + 24);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formatNumber(item.rec_users), x + 38, y + 32);
+        // ── artist name ──────────────────────────────────────
+        ink(...C.gray); norm(5.5);
+        txt((item.artist_name || '').toUpperCase().substring(0, 18), cx + 4, y + 12);
+
+        // ── song title ───────────────────────────────────────
+        ink(...C.white); bold(9);
+        txt((item.title || '').substring(0, 20), cx + 4, y + 19);
+
+        // ── divider ──────────────────────────────────────────
+        hline(cx + 4, y + 22, cx + effCardW - 4, [50, 50, 50]);
+
+        // ── efficiency score (left column) ───────────────────
+        ink(...C.gray); norm(5.5);
+        txt('EFFICIENCY SCORE', cx + 4, y + 28);
+        ink(...C.green); bold(13);
+        txt(fmtNum(item.efficiency_score), cx + 4, y + 37);
+
+        // ── rec users (right column) ─────────────────────────
+        ink(...C.gray); norm(5.5);
+        txt('REC. USERS', cx + effCardW - 4, y + 28, { align: 'right' });
+        ink(...C.white); bold(9);
+        txt(fmtNum(item.rec_users), cx + effCardW - 4, y + 37, { align: 'right' });
+
+        // ── progress bar ─────────────────────────────────────
+        const barX = cx + 4, barY = y + effCardH - 6;
+        const barW = effCardW - 8;
+        const filled = (Number(item.efficiency_score) / maxEff) * barW;
+        fill(50, 50, 50); rect(barX, barY, barW, 2);
+        fill(...C.green);  rect(barX, barY, Math.max(2, filled), 2);
+
+        // ── bar label ─────────────────────────────────────────
+        const pctLabel = Math.round((Number(item.efficiency_score) / maxEff) * 100) + '%';
+        ink(...C.dimgray); norm(5);
+        txt(pctLabel, cx + effCardW - 4, y + effCardH - 3.5, { align: 'right' });
       });
 
-      y += 52;
+      if (data.efficiency.length === 0) {
+        ink(...C.gray); norm(8);
+        txt('No efficiency data available', W / 2, y + effCardH / 2, { align: 'center' });
+      }
 
-      /* ─ Satisfaction section ─ */
-      doc.setFillColor(30, 30, 30);
-      doc.roundedRect(12, y - 6, 186, 8, 2, 2, 'F');
-      doc.setTextColor(...green);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text('★  MONTHLY SATISFACTION BY GENRE', 18, y - 0.5);
-      y += 8;
+      y += effCardH + 12;
 
-      const cols = 4;
-      const cardW = (186 - (cols - 1) * 4) / cols;
+      // ════════════════════════════════════════════════════════
+      // SECTION 2 — SATISFACTION
+      // ════════════════════════════════════════════════════════
+      sectionHeader('MONTHLY SATISFACTION BY GENRE', 'Average rating from user reviews');
+
+      const satCount  = data.satisfaction.length || 1;
+      const satCols   = Math.min(satCount, 4);
+      const GAP_SAT   = 4;
+      const satCardW  = (INNER - GAP_SAT * (satCols - 1)) / satCols;
+      const satCardH  = 44;
+
       data.satisfaction.forEach((genre, idx) => {
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
-        const x = 12 + col * (cardW + 4);
-        const cy = y + row * 36;
+        const col = idx % 4;
+        const row = Math.floor(idx / 4);
+        const cx  = PAD + col * (satCardW + GAP_SAT);
+        const cy  = y + row * (satCardH + 5);
+        const score = Number(genre.avg_score);
 
-        doc.setFillColor(42, 42, 42);
-        doc.roundedRect(x, cy, cardW, 32, 3, 3, 'F');
+        // ── card bg ──────────────────────────────────────────
+        fill(...C.card); rrect(cx, cy, satCardW, satCardH);
+        // green top accent
+        fill(...C.green); rect(cx, cy, satCardW, 1.2);
 
-        doc.setTextColor(...gray);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text(genre.name, x + cardW / 2, cy + 9, { align: 'center' });
+        // ── genre name ───────────────────────────────────────
+        ink(...C.gray); bold(7);
+        txt((genre.name || '').substring(0, 14), cx + satCardW / 2, cy + 10, { align: 'center' });
 
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.text(Number(genre.avg_score).toFixed(1), x + cardW / 2, cy + 22, { align: 'center' });
+        // ── score big number ─────────────────────────────────
+        ink(...C.white); bold(20);
+        txt(score.toFixed(1), cx + satCardW / 2, cy + 24, { align: 'center' });
 
-        doc.setTextColor(...gray);
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.text('AVG SCORE', x + cardW / 2, cy + 29, { align: 'center' });
+        // ── star rating bar (5 segments) ─────────────────────
+        const barTotalW = satCardW - 10;
+        const segW      = barTotalW / 5;
+        const barX      = cx + 5;
+        const barY      = cy + 28;
+        for (let s = 0; s < 5; s++) {
+          const fillAmt = Math.min(1, Math.max(0, score - s));
+          fill(50, 50, 50); rect(barX + s * segW + 0.5, barY, segW - 1, 2.5);
+          if (fillAmt > 0) {
+            fill(...C.green); rect(barX + s * segW + 0.5, barY, (segW - 1) * fillAmt, 2.5);
+          }
+        }
+
+        // ── avg score label ───────────────────────────────────
+        ink(...C.gray); norm(5.5);
+        txt('AVG SCORE', cx + satCardW / 2, cy + satCardH - 3, { align: 'center' });
       });
 
-      /* footer */
-      doc.setFillColor(42, 42, 42);
-      doc.rect(0, 285, 210, 12, 'F');
-      doc.setTextColor(...gray);
-      doc.setFontSize(7);
-      doc.text('Generated by Recommendation Analytics Dashboard', 14, 292);
-      doc.text('Page 1 of 1', 196, 292, { align: 'right' });
+      if (data.satisfaction.length === 0) {
+        ink(...C.gray); norm(8);
+        txt('No satisfaction data available', W / 2, y + satCardH / 2, { align: 'center' });
+      }
 
-      doc.save(`recommendation_analytics_${Date.now()}.pdf`);
+      // ── FOOTER ────────────────────────────────────────────────────
+      fill(...C.panel); rect(0, H - 11, W, 11);
+      hline(PAD, H - 11, W - PAD, C.green);
+      ink(...C.gray); norm(6.5);
+      txt('Recommendation Analytics Dashboard', PAD, H - 4.5);
+      txt('Page 1 of 1', W - PAD, H - 4.5, { align: 'right' });
+
+      doc.save('recommendation_analytics_' + Date.now() + '.pdf');
     } catch (err) {
       console.error('PDF export error:', err);
-      alert('PDF export failed. Make sure jsPDF is loaded.');
+      alert(
+        'PDF export failed: ' + err.message +
+        '\n\nAdd this to your index.html before </body>:\n' +
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>'
+      );
     } finally {
       setTimeout(() => setExporting(null), 1200);
     }
@@ -277,10 +391,10 @@ const RecommendationAnalytics = () => {
       className="min-h-screen bg-[#0d0d0d] text-[#e0e0e0] font-sans selection:bg-[#1DB954]/20"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      
+  
 
       <div className="max-w-7xl mx-auto px-8 py-8">
-        
+       
         {/* ── filter + export bar ── */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex gap-4 items-center">

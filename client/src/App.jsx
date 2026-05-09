@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+// แก้ไขบรรทัด import ด้านบนสุด
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from "./components/Layout";
 import Auth from "./pages/auth/Auth";
 import Dashboard from './pages/dashboard/Dashboard';
@@ -18,12 +19,15 @@ import Overview from './pages/report/Overview';
 import Content from './pages/report/Content';
 import Recommendation from './pages/report/Recommendation';
 import ArtistDetail from './pages/artist/ArtistDetail';
-
 function App() {
+
+  const isAuthenticated = !!localStorage.getItem('token');
 
   return (
       <Routes>
-        <Route element={<Layout/>}>
+        <Route path="/auth" element={!isAuthenticated ? <Auth/> : <Navigate to="/" replace />}/>
+
+        <Route element={isAuthenticated ? <Layout /> : <Navigate to="/auth" replace />}>
           <Route path="/" element={<Dashboard/>} />
           <Route path="/music" element={<Music/>} />
           <Route path="/music/:id/" element={<MusicDetail/>}/>
@@ -31,16 +35,17 @@ function App() {
           <Route path="/album/:id/" element={<AlbumDetail/>}/>
           <Route path="/artist" element={<Artist/>} />
           <Route path="/chart" element={<Chart/>} />
-          <Route path="/user" element={<Users/>} />
+          <Route path="/users" element={<Users/>} />
+          <Route path="/users/:id" element={<UsersDetail/>} />
           <Route path="/subscription" element={<SubscriptionPlans/>} />
           <Route path="/playlist" element={<Playlists/>} />
           <Route path="/playlist/:id" element={<PlaylistDetail/>} />
           <Route path="/transaction" element={<Transaction/>} />
-          <Route path="/report/overview" element={<Overview/>} />
-          <Route path="/report/content" element={<Content/>} />
-          <Route path="/report/recommendation" element={<Recommendation/>} />
+          <Route path="/reports/overview" element={<Overview/>} />
+          <Route path="/reports/content" element={<Content/>} />
+          <Route path="/reports/recommendation" element={<Recommendation/>} />
         </Route>
-        <Route path="/auth" element={<Auth/>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   )
 }

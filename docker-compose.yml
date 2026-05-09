@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # Database Service
@@ -11,7 +10,7 @@ services:
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: kapomtify
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # เชื่อมกับโฟลเดอร์ init เพื่อรัน SQL อัตโนมัติในครั้งแรก
