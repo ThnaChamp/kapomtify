@@ -5,5 +5,6 @@ const analyticsController = require("../controllers/analyticsController");
 router.get("/stats",analyticsController.getOverviewStats);
 router.get("/countries",analyticsController.getUserCountryStats);
 router.get("/engagement",analyticsController.getTopAlbumsEngagement);
-
+router.get('/content',analyticsController.getContentAnalytics);
+router.get('/recommendation',analyticsController.getRecommendationAnalytics);
 module.exports = router;

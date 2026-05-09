@@ -58,7 +58,7 @@ const NAV = [
     items: [
       { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/reports/overview" },
       { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/reports/content" },
-      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/recommendation" } // เพิ่มใหม่
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/reports/recommendation" } // เพิ่มใหม่
     ] 
   },
 ];
