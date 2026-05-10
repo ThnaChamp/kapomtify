@@ -12,6 +12,9 @@ const login = async (req, res) => {
         if (!user) {
             return res.status(401).json({ message: "Invalid Username or Password" });
         }
+        if (user.role !== 'admin') {
+            return res.status(403).json({ message: "Access Denied: Admins only" });
+        }
 
         // สำคัญ: ตรวจสอบชื่อคอลัมน์ใน DB ของคุณ (จาก INSERT ก่อนหน้าคือ password_hash)
         const dbPassword = user.password_hash || user.password;

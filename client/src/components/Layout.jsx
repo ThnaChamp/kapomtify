@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
@@ -27,11 +27,26 @@ const ChartIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const UsersIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
 const SubIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>;
 const PlaylistIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none" /><circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none" /></svg>;
-const AnalyticsIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
 const TransactionIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><rect x="3" y="5" width="18" height="14" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M7 15h.01M11 15h.01" /></svg>;
 const OverviewIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>;
 const ContentReportIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>;
 const RecommendIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[18px] h-[18px]"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>;
+
+/* ── Logout Icon ──────────────────────────────────────────────────────────── */
+const LogoutIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[16px] h-[16px]">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const ProfileIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-[16px] h-[16px]">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+  </svg>
+);
 
 /* ── Navigation Data ───────────────────────────────────────────────────────── */
 const NAV = [
@@ -50,7 +65,7 @@ const NAV = [
       { id: "users", label: "Users", icon: <UsersIcon />, path: "/users" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription-plan" }, 
       { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlist" },
-      { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" } // เพิ่มใหม่
+      { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" }
     ] 
   },
   { 
@@ -58,7 +73,7 @@ const NAV = [
     items: [
       { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/reports/overview" },
       { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/reports/content" },
-      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/reports/recommendation" } // เพิ่มใหม่
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/reports/recommendation" }
     ] 
   },
 ];
@@ -98,35 +113,27 @@ function Sidebar({ isOpen, onClose }) {
                     const isMusicTabActive = isActive || (id === "music" && location.pathname.startsWith("/album"));
                     return `flex items-center gap-3 w-full px-5 py-2 transition-all duration-200 group relative
                     ${isMusicTabActive ? "bg-white/[0.07] text-[#1DB954]" : "text-[#b3b3b3] hover:text-white hover:bg-white/5"}`
-                  }
-                    
-                  }
+                  }}
                 >
                   {({ isActive }) => {
                     const isMusicTabActive = isActive || (id === "music" && location.pathname.startsWith("/album"));
                     return (
-      <>
-        {/* 1. แถบสีเขียวด้านหน้า (Vertical Bar): ปรับให้มีความโค้งมนและไม่ชิดขอบบนล่างจนเกินไป */}
-        {isMusicTabActive && (
-          <div className="absolute left-0 top-1.5 bottom-1.5 w-[4px] bg-[#1DB954] rounded-r-full" />
-        )}
-
-        {/* 2. ไอคอน: เมื่อ Active จะเป็นสีเขียวเสมอ */}
-        <span className={`transition-colors ${isMusicTabActive ? "text-[#1DB954]" : "text-[#b3b3b3] group-hover:text-white"}`}>
-          {icon}
-        </span>
-        
-        {/* 3. ตัวหนังสือ: เมื่อ Active จะเป็นสีขาว (text-white) และตัวหนา (font-bold) */}
-        <span className={`text-[14px] tracking-wide transition-colors ${
-          isMusicTabActive 
-            ? "text-white font-bold" 
-            : "text-[#b3b3b3] font-medium group-hover:text-white"
-        }`}>
-          {label}
-        </span>
-      </>
-    );
-                    
+                      <>
+                        {isMusicTabActive && (
+                          <div className="absolute left-0 top-1.5 bottom-1.5 w-[4px] bg-[#1DB954] rounded-r-full" />
+                        )}
+                        <span className={`transition-colors ${isMusicTabActive ? "text-[#1DB954]" : "text-[#b3b3b3] group-hover:text-white"}`}>
+                          {icon}
+                        </span>
+                        <span className={`text-[14px] tracking-wide transition-colors ${
+                          isMusicTabActive 
+                            ? "text-white font-bold" 
+                            : "text-[#b3b3b3] font-medium group-hover:text-white"
+                        }`}>
+                          {label}
+                        </span>
+                      </>
+                    );
                   }}
                 </NavLink>
               ))}
@@ -135,6 +142,89 @@ function Sidebar({ isOpen, onClose }) {
         </nav>
       </aside>
     </>
+  );
+}
+
+/* ── Profile Dropdown Component ───────────────────────────────────────────── */
+function ProfileDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // ปิด dropdown เมื่อคลิกข้างนอก
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/auth";
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Avatar Button */}
+      <button
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`w-9 h-9 rounded-full bg-[#3a4a5a] text-[#c0d8ee] text-sm font-bold flex items-center justify-center transition-all duration-200 ring-2 ${
+          isOpen ? "ring-[#1DB954] ring-offset-2 ring-offset-[#1e1e1e]" : "ring-transparent hover:ring-[#1DB954]/50 hover:ring-offset-2 hover:ring-offset-[#1e1e1e]"
+        }`}
+        aria-label="Open profile menu"
+      >
+        AD
+      </button>
+
+      {/* Dropdown Panel */}
+      {isOpen && (
+        <div className="absolute right-0 top-[calc(100%+10px)] w-56 bg-[#282828] border border-[#3a3a3a] rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 animate-in">
+          
+          {/* Profile Info Section */}
+          <div className="px-4 py-3.5 border-b border-[#3a3a3a]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#3a4a5a] text-[#c0d8ee] text-sm font-bold flex items-center justify-center shrink-0">
+                AD
+              </div>
+              <div className="min-w-0">
+                <p className="text-white text-sm font-semibold truncate">Admin</p>
+                <p className="text-[#8e8e8e] text-[12px] truncate">admin@kapomtify.com</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <div className="py-1.5">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                // navigate("/profile") — เปลี่ยนเป็น navigate ถ้ามี
+              }}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-[#b3b3b3] hover:text-white hover:bg-white/5 transition-colors duration-150 text-[13px]"
+            >
+              <ProfileIcon />
+              <span>My Profile</span>
+            </button>
+          </div>
+
+          {/* Divider + Logout */}
+          <div className="border-t border-[#3a3a3a] py-1.5">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-[#f15e5e] hover:text-white hover:bg-[#f15e5e]/10 transition-colors duration-150 text-[13px] group"
+            >
+              <span className="text-[#f15e5e] group-hover:text-white transition-colors">
+                <LogoutIcon />
+              </span>
+              <span>Log out</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -152,9 +242,8 @@ function Header({ title, onMenuClick }) {
         <span className="hidden sm:inline-block bg-[#2a3a4a] text-[#7eb8e0] text-[11px] font-bold px-3 py-1 rounded-md tracking-wider">
           Admin
         </span>
-        <div className="w-9 h-9 rounded-full bg-[#3a4a5a] text-[#c0d8ee] text-sm font-bold flex items-center justify-center cursor-pointer">
-          AD
-        </div>
+        {/* ✅ แทนที่ div เดิมด้วย ProfileDropdown */}
+        <ProfileDropdown />
       </div>
     </header>
   );
@@ -165,7 +254,6 @@ export default function KapomtifyLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // จัดการ Keyboard & Resize
   useEffect(() => {
     const handleKey = (e) => { if (e.key === "Escape") setSidebarOpen(false); };
     window.addEventListener("keydown", handleKey);
@@ -178,10 +266,8 @@ export default function KapomtifyLayout() {
     };
   }, []);
 
-  // หา Title จาก Path ปัจจุบัน
   const allItems = NAV.flatMap(group => group.items);
   const activeItem = allItems.find(item => {
-    
     if (location.pathname.startsWith("/album")) {
       return item.id === "music";
     }
@@ -197,7 +283,6 @@ export default function KapomtifyLayout() {
         <Header title={displayTitle} onMenuClick={() => setSidebarOpen(o => !o)} />
         
         <main className="flex-1 overflow-y-auto p-0 custom-scrollbar">
-          {/* Outlet คือจุดที่ Component ของแต่ละหน้าจะมาโผล่ */}
           <Outlet />
         </main>
       </div>

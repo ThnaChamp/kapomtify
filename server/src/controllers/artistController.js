@@ -81,7 +81,6 @@ const createArtist = async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
         `;
         
-        // แปลงค่าให้ถูกต้องป้องกัน Database Error
         const isVerifiedBool = verified_status === 'Yes' || verified_status === true;
         const finalDebutYear = debut_year && debut_year.trim() !== '' ? debut_year : null;
         const finalGender = gender && gender.trim() !== '' ? gender : null; 
@@ -120,13 +119,39 @@ const updateArtist = async (req, res) => {
     }
 };
 
+// --- แก้ไขฟังก์ชัน deleteArtist ให้จัดการข้อมูลที่เกี่ยวข้องกันก่อนลบ ---
 const deleteArtist = async (req, res) => {
     const { id } = req.params;
+    const client = await db.connect(); // ใช้ Transaction เพื่อความปลอดภัย
     try {
-        await db.query(`DELETE FROM artist WHERE artist_id = $1`, [id]);
-        res.status(200).json({ message: "Artist deleted" });
+        await client.query('BEGIN');
+        
+        // 1. เคลียร์ข้อมูลที่ศิลปินคนนี้ไปเกี่ยวข้องในตารางต่างๆ (ที่ลบได้โดยไม่กระทบโครงสร้างหลัก)
+        await client.query(`DELETE FROM library_artist WHERE artist_id = $1`, [id]);
+        await client.query(`DELETE FROM music_artist WHERE artist_id = $1`, [id]);
+
+        // 2. ลองลบตัวศิลปิน
+        const result = await client.query(`DELETE FROM artist WHERE artist_id = $1`, [id]);
+        
+        if (result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "ไม่พบศิลปินที่ต้องการลบ" });
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: "ลบศิลปินเรียบร้อยแล้ว" });
     } catch (err) {
-        res.status(500).json({ error: "Delete failed" });
+        await client.query('ROLLBACK');
+        console.error("Delete Artist Error:", err.message);
+        
+        // ดัก Error code 23503 คือ Foreign Key Violation (เช่น ศิลปินนี้ยังมีอัลบั้มอยู่)
+        if (err.code === '23503') {
+            res.status(400).json({ error: "ไม่สามารถลบได้ เนื่องจากศิลปินนี้ยังมีอัลบั้มเพลงผูกอยู่ กรุณาลบอัลบั้มก่อน" });
+        } else {
+            res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบศิลปิน" });
+        }
+    } finally {
+        client.release();
     }
 };
 

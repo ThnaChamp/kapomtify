@@ -5,12 +5,12 @@
 -- =============================================
 -- 1. subscription_plan (5 rows)
 -- =============================================
-INSERT INTO subscription_plan (plan_id, plan_name, price, duration_day, description) VALUES
-(1, 'Free',    0,   30,  'Free plan with ads'),
-(2, 'Student', 59,  30,  'Discounted plan for students'),
-(3, 'Premium', 99,  30,  'Full access, no ads'),
-(4, 'Family',  159, 30,  'Up to 6 accounts'),
-(5, 'Annual',  990, 365, 'Premium plan billed annually');
+INSERT INTO subscription_plan (plan_id, plan_code, plan_name, price, duration_day, description) VALUES
+(1, 'P001', 'Free',    0,   30,  'Free plan with ads'),
+(2, 'P001', 'Student', 59,  30,  'Discounted plan for students'),
+(3, 'P001', 'Premium', 99,  30,  'Full access, no ads'),
+(4, 'P001', 'Family',  159, 30,  'Up to 6 accounts'),
+(5, 'P001', 'Annual',  990, 365, 'Premium plan billed annually');
 
 -- =============================================
 -- 2. artist (20 rows)
