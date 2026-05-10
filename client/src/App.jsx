@@ -10,7 +10,8 @@ import AlbumDetail from "./pages/music_album/AlbumDetail";
 import Artist from "./pages/artist/Artist";
 import ArtistDetail from "./pages/artist/ArtistDetail";
 import Chart from "./pages/chart/Chart";
-import Users from "./pages/users/Users";
+import ChartDetail from "./pages/chart/ChartDetail";
+import User from "./pages/users/User";
 import UsersDetail from "./pages/users/UserDetail";
 import SubscriptionPlan from "./pages/subscription_plan/SubscriptionPlans";
 import Playlists from "./pages/playlists/Playlists";
@@ -25,31 +26,34 @@ function App() {
   const checkAuth = () => !!localStorage.getItem('token');
 
   return (
-      <Routes>
-        <Route path="/auth" element={!checkAuth() ? <Auth/> : <Navigate to="/" replace />}/>
-
-        <Route element={checkAuth() ? <Layout /> : <Navigate to="/auth" replace />}>
-          <Route path="/" element={<Dashboard/>} />
-          <Route path="/music" element={<Music/>} />
-          <Route path="/music/:id/" element={<MusicDetail/>}/>
-          <Route path="/album" element={<Album/>} />
-          <Route path="/album/:id/" element={<AlbumDetail/>}/>
-          <Route path="/artist" element={<Artist/>} />
-          <Route path="/artist/:id" element={<ArtistDetail/>} />
-          <Route path="/chart" element={<Chart/>} />
-          <Route path="/users" element={<Users/>} />
-          <Route path="/users/:id" element={<UsersDetail/>} />
-          <Route path="/subscription-plan" element={<SubscriptionPlan/>} />
-          <Route path="/playlist" element={<Playlists/>} />
-          <Route path="/playlist/:id" element={<PlaylistDetail/>} />
-          <Route path="/transaction" element={<Transaction/>} />
-          <Route path="/reports/overview" element={<Overview/>} />
-          <Route path="/reports/content" element={<Content/>} />
-          <Route path="/reports/recommendation" element={<Recommendation/>} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-  )
+    <Routes>
+      <Route 
+      element={checkAuth() ? <Layout /> : <Navigate to="/auth" replace/>}
+      >
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/music" element={<Music />} />
+        <Route path="/music/:id/" element={<MusicDetail />} />
+        <Route path="/album" element={<Album />} />
+        <Route path="/album/:id/" element={<AlbumDetail />} />
+        <Route path="/artist" element={<Artist />} />
+        <Route path="/artist/:id" element={<ArtistDetail />} />
+        <Route path="/chart" element={<Chart />} />
+        <Route path="/chart/:id" element={<ChartDetail />} />
+        <Route path="/user" element={<User />} />
+        <Route path="/user/:id" element={<UsersDetail />} />
+        <Route path="/subscription-plan" element={<SubscriptionPlan />} />
+        <Route path="/playlist" element={<Playlists />} />
+        <Route path="/playlist/:id" element={<PlaylistDetail />} />
+        <Route path="/transaction" element={<Transaction />} />
+        <Route path="/report/overview" element={<Overview />} />
+        <Route path="/report/content" element={<Content />} />
+        <Route path="/report/recommendation" element={<Recommendation />} />
+      </Route>
+      <Route path="/auth" element={!checkAuth() ? <Auth/> : <Navigate to="/" replace/>} 
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
 export default App;

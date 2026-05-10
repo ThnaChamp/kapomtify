@@ -62,7 +62,7 @@ const NAV = [
   { 
     group: "USERS", 
     items: [
-      { id: "users", label: "Users", icon: <UsersIcon />, path: "/users" }, 
+      { id: "users", label: "Users", icon: <UsersIcon />, path: "/user" }, 
       { id: "subscription", label: "Subscription Plans", icon: <SubIcon />, path: "/subscription-plan" }, 
       { id: "playlists", label: "Playlists", icon: <PlaylistIcon />, path: "/playlist" },
       { id: "transactions", label: "Transactions", icon: <TransactionIcon />, path: "/transaction" }
@@ -71,9 +71,9 @@ const NAV = [
   { 
     group: "REPORTS", 
     items: [
-      { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/reports/overview" },
-      { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/reports/content" },
-      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/reports/recommendation" }
+      { id: "report-overview", label: "Overview", icon: <OverviewIcon />, path: "/report/overview" },
+      { id: "report-content", label: "Content", icon: <ContentReportIcon />, path: "/report/content" },
+      { id: "recommendation", label: "Recommendation", icon: <RecommendIcon />, path: "/report/recommendation" }
     ] 
   },
 ];
@@ -150,6 +150,8 @@ function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const isSuperAdmin = userRole === "super_admin";
   // ปิด dropdown เมื่อคลิกข้างนอก
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -172,11 +174,12 @@ function ProfileDropdown() {
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className={`w-9 h-9 rounded-full bg-[#3a4a5a] text-[#c0d8ee] text-sm font-bold flex items-center justify-center transition-all duration-200 ring-2 ${
+          isSuperAdmin ? "bg-[#f15e5e]" : "bg-[#3a4a5a]"
+        } ${
           isOpen ? "ring-[#1DB954] ring-offset-2 ring-offset-[#1e1e1e]" : "ring-transparent hover:ring-[#1DB954]/50 hover:ring-offset-2 hover:ring-offset-[#1e1e1e]"
         }`}
-        aria-label="Open profile menu"
       >
-        AD
+       {isSuperAdmin ? "SA" : "AD"}
       </button>
 
       {/* Dropdown Panel */}
@@ -186,11 +189,13 @@ function ProfileDropdown() {
           {/* Profile Info Section */}
           <div className="px-4 py-3.5 border-b border-[#3a3a3a]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#3a4a5a] text-[#c0d8ee] text-sm font-bold flex items-center justify-center shrink-0">
-                AD
+              <div className={`w-10 h-10 rounded-full text-white text-sm font-bold flex items-center justify-center shrink-0 ${isSuperAdmin ? "bg-[#f15e5e]" : "bg-[#3a4a5a]"}`}>
+                {isSuperAdmin ? "SA" : "AD"}
               </div>
               <div className="min-w-0">
-                <p className="text-white text-sm font-semibold truncate">Admin</p>
+                <p className="text-white text-sm font-semibold truncate">
+                  {isSuperAdmin ? "Super Admin" : "Admin"}
+                </p>
                 <p className="text-[#8e8e8e] text-[12px] truncate">admin@kapomtify.com</p>
               </div>
             </div>
@@ -230,6 +235,9 @@ function ProfileDropdown() {
 
 /* ── Header Component ─────────────────────────────────────────────────────── */
 function Header({ title, onMenuClick }) {
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const isSuperAdmin = userRole === "super_admin";
+
   return (
     <header className="flex items-center justify-between px-6 h-17.25 bg-[#1e1e1e] border-b border-[#2a2a2a] shrink-0 gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -238,11 +246,17 @@ function Header({ title, onMenuClick }) {
         </button>
         <h1 className="text-[#f0f0f0] text-lg font-semibold truncate tracking-tight">{title}</h1>
       </div>
+
       <div className="flex items-center gap-2.5 shrink-0">
-        <span className="hidden sm:inline-block bg-[#2a3a4a] text-[#7eb8e0] text-[11px] font-bold px-3 py-1 rounded-md tracking-wider">
-          Admin
+       
+        <span className={`hidden sm:inline-block text-white text-[11px] font-bold px-3 py-1 rounded-md tracking-wider transition-colors duration-300 ${
+          isSuperAdmin 
+            ? "bg-[#f15e5e]" 
+            : "bg-[#2a3a4a] text-[#7eb8e0]" 
+        }`}>
+          {isSuperAdmin ? "Super Admin" : "Admin"}
         </span>
-        {/* ✅ แทนที่ div เดิมด้วย ProfileDropdown */}
+        
         <ProfileDropdown />
       </div>
     </header>

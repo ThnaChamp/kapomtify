@@ -4,9 +4,10 @@ const { get } = require("../routes/albumRoutes");
 const getAllAlbums = async (req,res) => {
    try {
     const { search } = req.query;
-    const page = parseInt(req.query.page) ||  1 ;
+    const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const offset = (page - 1) * limit;
+
 
     let whereClause = "";
     let albumParams = [];

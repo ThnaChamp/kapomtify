@@ -17,6 +17,8 @@ export default function UsersPage() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const userRole = localStorage.getItem('userRole');
+  const ITEMS_PER_PAGE = 20;
 
   const fetchUsers = async () => {
     try {
@@ -90,12 +92,12 @@ export default function UsersPage() {
 
       {/* ── Users Table Container ── */}
       <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
-        <div className="overflow-y-auto max-h-[440px] custom-scrollbar">
+        <div className="overflow-y-auto max-h-[496px] overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333] sticky top-0 z-10">
                 <th className="px-6 py-4 w-12">#</th>
-                <th className="px-6 py-4">User Code</th>
+                <th className="px-6 py-4">Code</th>
                 <th className="px-6 py-4 text-center">Profile</th>
                 <th className="px-6 py-4">Username</th>
                 <th className="px-6 py-4">Plan Type</th>
@@ -105,7 +107,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-[#333]">
               {loading ? (
-                [...Array(5)].map((_, i) => (
+                [...Array(7)].map((_, i) => (
                   <tr key={i} className="animate-pulse h-[64px]">
                     <td colSpan="7" className="px-6 py-5">
                       <div className="h-4 bg-[#333] rounded w-full"></div>
@@ -116,9 +118,9 @@ export default function UsersPage() {
                 users.map((user, i) => (
                   <tr key={user.user_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px] group">
                     <td className="px-6 py-5 text-sm font-bold text-gray-300">
-                      {(currentPage - 1) * 20 + (i + 1)}
+                      {(currentPage - 1) * ITEMS_PER_PAGE + (i + 1)}
                     </td>
-                    <td className="px-6 py-5 text-sm font-bold text-gray-300">
+                    <td className="px-6 py-5 text-sm font-bold text-gray-300 truncate max-w-[120px]">
                       {user.user_code}
                     </td>
                     <td className="px-6 py-5">
@@ -130,7 +132,7 @@ export default function UsersPage() {
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-sm font-medium text-gray-300">{user.display_name || user.username}</td>
+                    <td className="px-6 py-5 text-sm font-medium text-gray-300 truncate max-w-[200px]">{user.display_name || user.username}</td>
                     <td className="px-6 py-5 text-sm text-gray-400">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                         user.plan_type === 'Free' ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' : 'bg-[#1DB954]/10 text-[#1DB954] border border-[#1DB954]/20'
@@ -138,20 +140,22 @@ export default function UsersPage() {
                         {user.plan_type || 'Free'}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-sm text-gray-400">
+                    <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[120px]">
                       {user.created_at ? user.created_at.split('T')[0] : "-"}
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-5 text-right">
                       <div className="flex gap-2 justify-end">
                         <button 
-                          onClick={() => navigate(`/users/${user.user_id}`)}
+                          onClick={() => navigate(`/user/${user.user_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail
                         </button>
+                        {userRole === 'super_admin' && (
                         <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">
                           Delete
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -4,7 +4,7 @@ const getAllUsers = async (req, res) => {
     try {
         const { search, plan} = req.query;
         const page = parseInt(req.query.page) || 1;
-        const limit = 7;
+        const limit = 20;
         const offset = (page - 1) * limit;
 
         let conditions =[];
@@ -104,7 +104,7 @@ const getUserSavedAlbums = async (req,res) => {
     try {
         const { id } = req.params;
         const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+        const limit = 20;
         const offset = (page -1) * limit;
 
         const query = `

@@ -5,22 +5,20 @@ import Filter from '../../components/filterBtn';
 import Create from '../../components/createBtn';
 import Cancel from '../../components/cancelBtn';
 import CreateM from "../../components/createMBtn";
-
+const userRole = localStorage.getItem('userRole');
 export default function ChartPage() {
   const navigate = useNavigate();
-  const [playlists, setPlaylists] = useState([]);
+  const [charts, setCharts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
-    playlist_code: '',
-    name: '',
-    user_id: '',
-    is_public: 'true',
-    cover_image_url: '',
-    description: ''
+    chart_code: '',
+    chart_name: '',
+    description: '',
+    chart_date: new Date().toISOString().split('T')[0]
   });
 
   // Close modal on Escape key press
@@ -41,8 +39,8 @@ export default function ChartPage() {
     const fetchUsers = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users`);
-        const data = await res.json();
-        setUsers(data);
+        const result = await res.json();
+        setUsers(result.data || []);
       } catch (err) {
         console.error("Error fetching users:", err);
       }
@@ -50,73 +48,68 @@ export default function ChartPage() {
     fetchUsers();
   }, []);
 
-  const fetchPlaylists = async () => {
+  const fetchCharts = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts?page=${currentPage}`);
       const result = await res.json();
-      setPlaylists(result.data);
-      setTotalPages(result.pagination.totalPages || 1);
+      setCharts(result.data || []);
+      setTotalPages(result.pagination?.totalPages || 1);
     } catch (err) {
-      console.error("Error fetching playlists:", err);
+      console.error("Error fetching charts:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPlaylists();
+    fetchCharts();
   }, [currentPage]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        ...formData,
-        user_id: parseInt(formData.user_id),
-        is_public: formData.is_public === 'true'
-      };
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(formData)
       });
       if (res.ok) {
         setIsModalOpen(false);
-        setFormData({ playlist_code: '', name: '', user_id: '', is_public: 'true', cover_image_url: '', description: '' });
-        fetchPlaylists();
+        setFormData({ chart_code: '', chart_name: '', description: '', chart_date: new Date().toISOString().split('T')[0] });
+        fetchCharts();
       } else {
         const err = await res.json();
         alert(`สร้างไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
-      console.error("Error creating playlist:", err);
+      console.error("Error creating chart:", err);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Playlist นี้?")) return;
+    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Chart นี้?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
-        fetchPlaylists();
+        fetchCharts();
         alert("ลบข้อมูลสำเร็จ");
       } else {
         const err = await res.json();
         alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
-      console.error("Error deleting playlist:", err);
+      console.error("Error deleting chart:", err);
       alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
   };
-
-  if (loading) return <div className="p-8 text-white">Loading Chart...</div>;
 
   return (
     <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
@@ -142,47 +135,45 @@ export default function ChartPage() {
                   <th className="px-6 py-4">Chart Name</th>
                   <th className="px-6 py-4">Description</th>
                   <th className="px-6 py-4">Chart Date</th>
-                  <th className="px-6 py-4">Total music</th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-4 text-center">Total music</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
-                {playlists.map((p, i) => (
-                  <tr key={p.playlist_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px]">
+                {charts.length > 0 ? charts.map((c, i) => (
+                  <tr key={c.chart_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px]">
                     <td className="px-6 py-4 text-sm font-bold text-gray-300">{(currentPage - 1) * 10 + (i + 1)}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{p.playlist_code}</td>
-                    <td className="px-6 py-4">
-                      {p.cover_image_url
-                        ? <img src={p.cover_image_url} alt={p.name} className="w-10 h-10 rounded object-cover" />
-                        : <div className="w-10 h-10 rounded bg-[#333] flex items-center justify-center text-gray-500 text-xs">N/A</div>
-                      }
+                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{c.chart_code || '-'}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-300">{c.chart_name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400 truncate max-w-[200px]">{c.description || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">
+                      {c.chart_date ? c.chart_date.split('T')[0] : '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-300">{p.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{p.username}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`font-bold ${p.is_public ? 'text-[#1DB954]' : 'text-gray-400'}`}>
-                        {p.is_public ? 'Public' : 'Private'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{p.total_music}</td>
+                    <td className="px-6 py-4 text-sm text-center text-gray-400">{c.total_music || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => navigate(`/playlists/${p.playlist_id}`)}
+                          onClick={() => navigate(`/chart/${c.chart_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail
                         </button>
+                        {userRole === 'super_admin' && (
                         <button
-                          onClick={() => handleDelete(p.playlist_id)}
+                          onClick={() => handleDelete(c.chart_id)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Delete
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-10 text-center text-gray-500 italic">No charts found</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -219,7 +210,7 @@ export default function ChartPage() {
         </div>
       </div>
 
-      {/* Modal Create */}
+      {/* ── Modal Create ── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl">
@@ -232,8 +223,8 @@ export default function ChartPage() {
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-gray-400">Code</label>
                 <input
-                  name="playlist_code"
-                  value={formData.playlist_code}
+                  name="chart_code"
+                  value={formData.chart_code}
                   onChange={handleChange}
                   className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
                   placeholder="C-XXX"
@@ -241,56 +232,35 @@ export default function ChartPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Playlist name</label>
+                <label className="text-xs font-bold text-gray-400">Chart name</label>
                 <input
-                  name="name"
-                  value={formData.name}
+                  name="chart_name"
+                  value={formData.chart_name}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]"
+                  required
+                />
+              </div>
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400">Date</label>
+                <input
+                  type="date"
+                  name="chart_date"
+                  value={formData.chart_date}
                   onChange={handleChange}
                   className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
                   required
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">User</label>
-                <select
-                  name="user_id"
-                  value={formData.user_id}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm cursor-pointer"
-                  required
-                >
-                  <option value="">Select User</option>
-                  {users.map(u => (
-                    <option key={u.user_id} value={u.user_id}>{u.username}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Playlist Type</label>
-                <select
-                  name="is_public"
-                  value={formData.is_public}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm cursor-pointer"
-                >
-                  <option value="true">Public</option>
-                  <option value="false">Private</option>
-                </select>
-              </div>
               <div className="col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Cover Image</label>
-                <div className="flex bg-[#3e3e3e] border border-[#555] rounded-md overflow-hidden">
-                  <input
-                    name="cover_image_url"
-                    value={formData.cover_image_url}
-                    onChange={handleChange}
-                    className="bg-transparent flex-1 p-2 outline-none text-white text-sm"
-                    placeholder="URL or path..."
-                  />
-                  <button type="button" className="bg-[#444] px-4 py-1 text-sm font-bold border-l border-[#555] hover:bg-[#555]">
-                    Upload
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-gray-400">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm h-24 resize-none"
+                  placeholder="Chart description..."
+                />
               </div>
 
               <div className="col-span-2 flex justify-end gap-3 mt-6 border-t border-[#333] pt-6">

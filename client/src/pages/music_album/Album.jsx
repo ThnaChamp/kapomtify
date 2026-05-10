@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import SearchBox from '../../components/searchBox';
-import Filter from '../../components/filterBtn';
-import Create from '../../components/createBtn';
-import Cancel from '../../components/cancelBtn';
-import CreateM from "../../components/createMBtn";
+import SearchBox from "../../components/searchBox";
+import Filter from "../../components/filterBtn";
+import Create from "../../components/createBtn";
 
 export default function AlbumPage() {
   const navigate = useNavigate();
@@ -14,21 +12,23 @@ export default function AlbumPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const userRole = localStorage.getItem('userRole');
   // Search States
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Form State สำหรับสร้าง Album ใหม่
- const [formData, setFormData] = useState({
+  // Form State
+  const [formData, setFormData] = useState({
     album_code: '',
     album_name: '',
     artist_id: '',
     album_type: 'single', 
     cover_image_url: '',
     release_date: ''
-});
+  });
   const [artists, setArtists] = useState([]);
+
+  const ITEMS_PER_PAGE = 20;
 
   // --- Fetch Data Functions ---
   const fetchAlbums = async () => {
@@ -51,11 +51,10 @@ export default function AlbumPage() {
   };
 
   useEffect(() => {
-    // โหลดรายชื่อ Artist สำหรับใช้ใน Modal Select
     const fetchArtists = async () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists`);
       const data = await res.json();
-      setArtists(data);
+      setArtists(data.data || data);
     };
     fetchArtists();
   }, []);
@@ -89,7 +88,7 @@ export default function AlbumPage() {
       });
       if (response.ok) {
         setIsModalOpen(false);
-        setFormData({ album_code: '', album_name: '', release_date: '', artist_id: '', cover_image_url: '' });
+        setFormData({ album_code: '', album_name: '', release_date: '', artist_id: '', cover_image_url: '', album_type: 'single' });
         fetchAlbums();
       }
     } catch (error) {
@@ -99,14 +98,11 @@ export default function AlbumPage() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบอัลบั้มนี้? ข้อมูลจะหายไปถาวร")) return;
-
     try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${id}`, {
             method: 'DELETE',
         });
-
         const result = await response.json();
-
         if (response.ok) {
             alert("ลบอัลบั้มสำเร็จ");
             fetchAlbums(); 
@@ -143,61 +139,65 @@ export default function AlbumPage() {
         </div>
 
         {/* ── Data Table ── */}
-        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden mt-2 shadow-xl flex flex-col">
-          <div className="overflow-y-auto max-h-[440px] custom-scrollbar">
+        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2 flex flex-col">
+          <div className="overflow-x-auto max-h-[496px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-[#252525]">
-                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
+                <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
                   <th className="px-6 py-4 w-12 text-center">#</th>
                   <th className="px-6 py-4">Code</th>
-                  <th className="px-6 py-4">Cover</th>
-                  <th className="px-6 py-4">Album name</th>
+                  <th className="px-6 py-4 text-center">Cover</th>
+                  <th className="px-6 py-4">Album Name</th>
                   <th className="px-6 py-4">Artist</th>
                   <th className="px-6 py-4">Release Date</th>
-                  <th className="px-6 py-4 text-center">Total music</th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-4 text-center">Tracks</th>
+                  <th className="px-6 py-4 text-right"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#333]">
                 {loading ? (
-                // ✅ แสดง Skeleton แทนคำว่า Loading
-                [...Array(5)].map((_, index) => (
+                [...Array(7)].map((_, index) => (
                   <tr key={index} className="animate-pulse h-[64px]">
-                    <td colSpan="7" className="px-6 py-5">
+                    <td colSpan="8" className="px-6 py-5">
                       <div className="h-4 bg-[#333] rounded w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : albums.length > 0 ? (
                 albums.map((alb, i) => (
-                  <tr key={alb.album_id} className="hover:bg-[#2a2a2a] transition-colors group h-[80px]">
-                    <td className="px-6 py-3 text-sm font-bold text-gray-300 text-center">{(currentPage - 1) * 20 + (i + 1)}</td>
-                    <td className="px-6 py-3 text-sm font-bold text-gray-300">{alb.album_code}</td>
-                    <td className="px-6 py-3">
-                      <img 
-                        src={alb.cover_image_url || 'https://via.placeholder.com/150'} 
-                        alt="cover" 
-                        className="w-12 h-12 rounded object-cover border border-[#444]" 
-                      />
+                  <tr key={alb.album_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px] group">
+                    <td className="px-6 py-3 text-sm font-bold text-gray-300 text-center">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + (i + 1)}
                     </td>
-                    <td className="px-6 py-3 text-sm font-medium text-gray-300">{alb.album_name}</td>
-                    <td className="px-6 py-3 text-sm text-gray-400">{alb.artist_names || "Unknown"}</td>
-                    <td className="px-6 py-3 text-sm text-gray-400">{alb.release_date?.split('T')[0]}</td>
-                    <td className="px-6 py-3 text-sm text-gray-400 text-center">{alb.total_music || 0}</td>
+                    <td className="px-6 py-3 text-sm font-bold text-gray-300 truncate max-w-[100px]">{alb.album_code}</td>
+                    <td className="px-6 py-3">
+                      <div className="flex justify-center">
+                        <img 
+                          src={alb.cover_image_url || 'https://via.placeholder.com/150'} 
+                          alt="cover" 
+                          className="w-8 h-8 rounded object-cover bg-[#333]" 
+                        />
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-sm font-medium text-gray-300 truncate max-w-[200px]">{alb.album_name}</td>
+                    <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[150px]">{alb.artist_names || "Unknown"}</td>
+                    <td className="px-6 py-3 text-sm text-gray-400 truncate max-w-[120px]">{alb.release_date?.split('T')[0]}</td>
+                    <td className="px-6 py-3 text-sm text-gray-400 text-center font-bold">{alb.total_music || 0}</td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex gap-2 justify-end">
                         <button onClick={() => navigate(`/album/${alb.album_id}`)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]">Detail</button>
+                        {userRole === 'super_admin' && (
                         <button onClick={() => handleDelete(alb.album_id)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">Delete</button>
-                      </div>
+                        )}
+                        </div>
                     </td>
                   </tr>
                 ))
               ) : (<tr>
-                  <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
-                    No album found
+                  <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
+                    No albums found
                   </td>
                 </tr>)}
-                
               </tbody>
             </table>
           </div>
@@ -208,162 +208,129 @@ export default function AlbumPage() {
           <button 
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] ${currentPage === 1 ? "opacity-30" : "hover:bg-[#333]"}`}
+            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
           > ‹ </button>
-          {[...Array(totalPages)].map((_, index) => (
-            <button
-              key={index + 1}
-              onClick={() => setCurrentPage(index + 1)}
-              className={`w-10 h-10 rounded-lg border text-sm font-bold ${currentPage === index + 1 ? "bg-[#1DB954] text-black" : "text-gray-400"}`}
-            > {index + 1} </button>
-          ))}
+          {[...Array(totalPages)].map((_, index) => {
+            const pageNum = index + 1;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${currentPage === pageNum ? "bg-[#1DB954] border-[#1DB954] text-black scale-105" : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"}`}
+              > {pageNum} </button>
+            );
+          })}
           <button 
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] ${currentPage === totalPages ? "opacity-30" : "hover:bg-[#333]"}`}
+            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
           > » </button>
         </div>
       </div>
 
-      {/* ── Modal Create Album ── */}
+      {/* ── Modal Create ── */}
       {isModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div className="bg-[#282828] p-8 rounded-2xl border border-[#3c3c3c] w-full max-w-2xl shadow-2xl relative">
-      
-      {/* ส่วนหัว Modal */}
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold text-white tracking-tight">Create new album</h2>
-        <button 
-          onClick={() => setIsModalOpen(false)} 
-          className="text-gray-400 hover:text-white transition-colors text-xl font-light"
-        >
-          ✕
-        </button>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Row 1: Code & Album name */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Code</label>
-            <input 
-              name="album_code" 
-              value={formData.album_code} 
-              onChange={handleChange} 
-              className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all" 
-              placeholder="e.g. AB001R" 
-              required 
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Album name</label>
-            <input 
-              name="album_name" 
-              value={formData.album_name} 
-              onChange={handleChange} 
-              className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all" 
-              required 
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Artist & Album Type */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Artist</label>
-            <select 
-              name="artist_id" 
-              value={formData.artist_id} 
-              onChange={handleChange} 
-              className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all cursor-pointer"
-              required
-            >
-              <option value="">Select Artist</option>
-              {artists.map(art => (
-                <option key={art.artist_id} value={art.artist_id}>{art.artist_name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Album Type</label>
-            <select 
-              name="album_type" 
-              value={formData.album_type} 
-              onChange={handleChange} 
-              className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all cursor-pointer"
-            >
-              <option value="single">Single</option>
-              <option value="ep">EP</option>
-              <option value="album">Album</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Row 3: Cover Image (Full Width with Upload Button) */}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-gray-300">Cover Image</label>
-          <div className="flex bg-[#2a2a2a] border border-[#404040] rounded-xl overflow-hidden focus-within:border-[#1DB954] transition-all">
-            <input 
-              name="cover_image_url" 
-              value={formData.cover_image_url} 
-              onChange={handleChange} 
-              className="bg-transparent flex-1 p-3 outline-none text-white text-sm" 
-              placeholder="Image URL..." 
-            />
-            <button 
-              type="button" 
-              className="bg-[#3e3e3e] px-6 py-2 text-sm font-bold text-white hover:bg-[#4a4a4a] transition-colors border-l border-[#404040]"
-            >
-              Upload
-            </button>
-          </div>
-        </div>
-
-        {/* Row 4: Release date & Total tracks */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Release date</label>
-            <div className="relative">
-              <input 
-                type="date" 
-                name="release_date" 
-                onChange={handleChange} 
-                className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all w-full appearance-none invert-[0.8] brightness-[1.2]" 
-                required 
-              />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#282828] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Album</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-300">Total tracks</label>
-            <input 
-              type="number" 
-              name="total_tracks" 
-              className="bg-[#2a2a2a] border border-[#404040] rounded-xl p-3 text-white outline-none focus:border-[#1DB954] transition-all" 
-              placeholder="0"
-            />
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div className="grid grid-cols-2 gap-5">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Album Code</label>
+                  <input 
+                    name="album_code" 
+                    value={formData.album_code} 
+                    onChange={handleChange} 
+                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]" 
+                    placeholder="ALB-XXX" 
+                    required 
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Album Name</label>
+                  <input 
+                    name="album_name" 
+                    value={formData.album_name} 
+                    onChange={handleChange} 
+                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]" 
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Artist</label>
+                  <select 
+                    name="artist_id" 
+                    value={formData.artist_id} 
+                    onChange={handleChange} 
+                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] cursor-pointer"
+                    required
+                  >
+                    <option value="">Select Artist</option>
+                    {artists.map(art => (
+                      <option key={art.artist_id} value={art.artist_id}>{art.artist_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Album Type</label>
+                  <select 
+                    name="album_type" 
+                    value={formData.album_type} 
+                    onChange={handleChange} 
+                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] cursor-pointer"
+                  >
+                    <option value="single">Single</option>
+                    <option value="ep">EP</option>
+                    <option value="album">Album</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400 uppercase">Cover Image URL</label>
+                <input 
+                  name="cover_image_url" 
+                  value={formData.cover_image_url} 
+                  onChange={handleChange} 
+                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]" 
+                  placeholder="https://..." 
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400 uppercase">Release Date</label>
+                <input 
+                  type="date" 
+                  name="release_date" 
+                  onChange={handleChange} 
+                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] invert-[0.8] brightness-[1.2]" 
+                  required 
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/5">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95"
+                >
+                  Create Album
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-
-        {/* ปุ่มกดยืนยันด้านล่าง */}
-        <div className="flex justify-end gap-4 mt-10 pt-4">
-          <button 
-            type="button" 
-            onClick={() => setIsModalOpen(false)} 
-            className="px-8 py-2.5 rounded-xl border border-[#555] font-bold text-gray-300 hover:bg-[#333] transition-all"
-          >
-            Cancle
-          </button>
-          <button 
-            type="submit" 
-            className="px-10 py-2.5 rounded-xl border border-[#1DB954] text-[#1DB954] font-bold hover:bg-[#1DB954] hover:text-black transition-all shadow-[0_0_15px_rgba(29,185,84,0.2)]"
-          >
-            Create
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

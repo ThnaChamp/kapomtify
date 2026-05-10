@@ -12,7 +12,7 @@ const login = async (req, res) => {
         if (!user) {
             return res.status(401).json({ message: "Invalid Username or Password" });
         }
-        if (user.role !== 'admin') {
+        if (user.role !== 'admin' && user.role !== 'super_admin' ) {
             return res.status(403).json({ message: "Access Denied: Admins only" });
         }
 
