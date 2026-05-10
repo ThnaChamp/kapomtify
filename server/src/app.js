@@ -9,8 +9,13 @@ const genreRoutes = require('./routes/genreRoutes');
 const userRoutes = require('./routes/userRoutes');
 const playlistRoutes = require('./routes/playlistRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+
 const transactionRoutes = require('./routes/transactionRoutes');
 // const subscriptionRoutes = require('./routes/subscriptionRoutes');
+
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const chartRoutes = require('./routes/chartRoutes');
+
 
 require('dotenv').config();
 
@@ -30,11 +35,17 @@ app.use('/api/genres', genreRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/playlists', playlistRoutes);
 app.use('/api/analytics', analyticsRoutes);
+<<<<<<< HEAD
 app.use('/api/transactions', transactionRoutes);
 // app.use('/api/subscriptions', subscriptionRoutes);
+=======
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/charts', chartRoutes);
+
+>>>>>>> e72117223dafe9f6b49d20fea4821293fdfa6bb4
 app.listen(PORT, () => {
     console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+    console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
     console.log('DB_HOST:', process.env.DB_HOST);
     console.log('DB_PORT:', process.env.DB_PORT);
     console.log('DB_NAME:', process.env.DB_NAME);

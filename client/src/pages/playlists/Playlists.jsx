@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchBox from "../../components/searchBox";
-import FilterBtn from "../../components/filterBtn";
-import CreateBtn from "../../components/createBtn";
-import CancelBtn from "../../components/cancelBtn";
-
-const PlusIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const FilterIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>;
+import Filter from "../../components/filterBtn";
+import Create from "../../components/createBtn";
 
 export default function PlaylistsPage() {
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,26 +23,14 @@ export default function PlaylistsPage() {
     description: ''
   });
 
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape" && isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isModalOpen]);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users`);
         const data = await res.json();
-        setUsers(data);
+        setUsers(data.data || data);
       } catch (err) {
         console.error("Error fetching users:", err);
       }
@@ -55,10 +41,10 @@ export default function PlaylistsPage() {
   const fetchPlaylists = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}&search=${searchQuery}`);
       const result = await res.json();
-      setPlaylists(result.data);
-      setTotalPages(result.pagination.totalPages || 1);
+      setPlaylists(result.data || []);
+      setTotalPages(result.pagination?.totalPages || 1);
     } catch (err) {
       console.error("Error fetching playlists:", err);
     } finally {
@@ -67,8 +53,18 @@ export default function PlaylistsPage() {
   };
 
   useEffect(() => {
-    fetchPlaylists();
-  }, [currentPage]);
+    const delay = setTimeout(() => {
+        fetchPlaylists();
+    }, 500);
+    return () => clearTimeout(delay);
+  }, [currentPage, searchQuery]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+        setSearchQuery(searchTerm);
+        setCurrentPage(1);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -118,60 +114,76 @@ export default function PlaylistsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-white">Loading playlists...</div>;
-
   return (
-    <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
-      <div className="px-8 pt-6 flex flex-col gap-5">
-
-        {/* Toolbar */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-3 items-center">
-            <SearchBox placeholder="Search playlists..." />
-            <FilterBtn />
-          </div>
-          <CreateBtn onClick={() => setIsModalOpen(true)} text="Playlist" />
+    <div className="flex flex-col gap-5 p-8 text-[#e0e0e0]">
+      {/* ── Toolbar ── */}
+      <div className="flex justify-between items-center mt-2">
+        <div className="flex gap-3 items-center">
+          <SearchBox
+            placeholder="Search playlists..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <Filter />
         </div>
+        <Create text="Playlist" onClick={() => setIsModalOpen(true)} />
+      </div>  
 
-        {/* Table */}
-        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl flex flex-col">
-          <div className="overflow-y-auto max-h-[440px] custom-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-10 bg-[#252525]">
-                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
-                  <th className="px-6 py-4 w-12">#</th>
-                  <th className="px-6 py-4">Code</th>
-                  <th className="px-6 py-4">Cover</th>
-                  <th className="px-6 py-4">Playlist</th>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Total music</th>
-                  <th className="px-6 py-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#333]">
-                {playlists.map((p, i) => (
-                  <tr key={p.playlist_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px]">
-                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{(currentPage - 1) * 10 + (i + 1)}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{p.playlist_code}</td>
-                    <td className="px-6 py-4">
-                      {p.cover_image_url
-                        ? <img src={p.cover_image_url} alt={p.name} className="w-10 h-10 rounded object-cover" />
-                        : <div className="w-10 h-10 rounded bg-[#333] flex items-center justify-center text-gray-500 text-xs">N/A</div>
-                      }
+      {/* ── Data Table ── */}
+      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
+        <div className="overflow-x-auto max-h-[496px] overflow-y-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333] sticky top-0 z-10">
+                <th className="px-6 py-4 w-12">#</th>
+                <th className="px-6 py-4">Code</th>
+                <th className="px-6 py-4 text-center">Cover</th>
+                <th className="px-6 py-4">Playlist Name</th>
+                <th className="px-6 py-4">Owner</th>
+                <th className="px-6 py-4 text-center">Type</th>
+                <th className="px-6 py-4 text-center">Music</th>
+                <th className="px-6 py-4 text-right"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#333]">
+              {loading ? (
+                [...Array(7)].map((_, i) => (
+                  <tr key={i} className="animate-pulse h-[64px]">
+                    <td colSpan="8" className="px-6 py-5">
+                      <div className="h-4 bg-[#333] rounded w-full"></div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-300">{p.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{p.username}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`font-bold ${p.is_public ? 'text-[#1DB954]' : 'text-gray-400'}`}>
+                  </tr>
+                ))
+              ) : playlists.length > 0 ? (
+                playlists.map((p, i) => (
+                  <tr key={p.playlist_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px] group">
+                    <td className="px-6 py-5 text-sm font-bold text-gray-300">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + (i + 1)}
+                    </td>
+                    <td className="px-6 py-5 text-sm font-bold text-gray-300 truncate max-w-[100px]">{p.playlist_code}</td>
+                    <td className="px-6 py-5">
+                      <div className="flex justify-center">
+                        {p.cover_image_url
+                          ? <img src={p.cover_image_url} alt={p.name} className="w-8 h-8 rounded object-cover bg-[#333]" />
+                          : <div className="w-8 h-8 rounded bg-[#333] flex items-center justify-center text-gray-500 text-[10px]">N/A</div>
+                        }
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-sm font-medium text-gray-300 truncate max-w-[200px]">{p.name}</td>
+                    <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[150px]">{p.username}</td>
+                    <td className="px-6 py-5 text-sm text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        p.is_public ? 'bg-[#1DB954]/10 text-[#1DB954] border border-[#1DB954]/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                      }`}>
                         {p.is_public ? 'Public' : 'Private'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{p.total_music}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5 text-sm text-center text-gray-400 font-bold">{p.total_music}</td>
+                    <td className="px-6 py-5 text-right">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => navigate(`/playlists/${p.playlist_id}`)}
+                          onClick={() => navigate(`/playlist/${p.playlist_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail
@@ -185,55 +197,71 @@ export default function PlaylistsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
-          >
-            ‹
-          </button>
-          {[...Array(totalPages)].map((_, index) => {
-            const pageNum = index + 1;
-            return (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${currentPage === pageNum ? "bg-[#1DB954] border-[#1DB954] text-black scale-105" : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"}`}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
-          >
-            »
-          </button>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
+                    No playlists found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Modal Create */}
+      {/* ── Pagination ── */}
+      <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
+        <button 
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
+            currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"
+          }`}
+        >
+          ‹
+        </button>
+        {[...Array(totalPages)].map((_, index) => {
+          const pageNum = index + 1;
+          return (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${
+                currentPage === pageNum 
+                  ? "bg-[#1DB954] border-[#1DB954] text-black scale-105"
+                  : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"
+              }`}
+            >
+              {pageNum}
+            </button>
+          );
+        })}
+        <button 
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
+            currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"
+          }`}
+        >
+          »
+        </button>
+      </div>
+
+      {/* ── Modal Create ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">Add playlist</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white text-xl">x</button>
+              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Playlist</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Code</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">Playlist Code</label>
                 <input
                   name="playlist_code"
                   value={formData.playlist_code}
@@ -244,7 +272,7 @@ export default function PlaylistsPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Playlist name</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">Playlist Name</label>
                 <input
                   name="name"
                   value={formData.name}
@@ -254,7 +282,7 @@ export default function PlaylistsPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">User</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">User / Owner</label>
                 <select
                   name="user_id"
                   value={formData.user_id}
@@ -269,7 +297,7 @@ export default function PlaylistsPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Playlist Type</label>
+                <label className="text-xs font-bold text-gray-400 uppercase">Visibility</label>
                 <select
                   name="is_public"
                   value={formData.is_public}
@@ -281,34 +309,38 @@ export default function PlaylistsPage() {
                 </select>
               </div>
               <div className="col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Cover Image</label>
-                <div className="flex bg-[#3e3e3e] border border-[#555] rounded-md overflow-hidden">
-                  <input
-                    name="cover_image_url"
-                    value={formData.cover_image_url}
-                    onChange={handleChange}
-                    className="bg-transparent flex-1 p-2 outline-none text-white text-sm"
-                    placeholder="URL or path..."
-                  />
-                  <button type="button" className="bg-[#444] px-4 py-1 text-sm font-bold border-l border-[#555] hover:bg-[#555]">
-                    Upload
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-gray-400 uppercase">Cover Image URL</label>
+                <input
+                  name="cover_image_url"
+                  value={formData.cover_image_url}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400 uppercase">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm h-24 resize-none"
+                />
               </div>
 
-              <div className="col-span-2 flex justify-end gap-3 mt-6 border-t border-[#333] pt-6">
+              <div className="col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-white/5">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2 rounded-lg border border-[#666] font-bold text-white hover:bg-[#444] transition-colors"
+                  className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-2 rounded-lg border border-[#1DB954] text-[#1DB954] font-bold hover:bg-[#1DB954] hover:text-black transition-all"
+                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95"
                 >
-                  Create
+                  Create Playlist
                 </button>
               </div>
             </form>

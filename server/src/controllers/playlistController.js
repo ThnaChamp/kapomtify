@@ -3,7 +3,7 @@ const db = require("../db/pool");
 const getAllPlaylists = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+        const limit = 20;
         const offset = (page - 1) * limit;
 
         const query = `
@@ -50,6 +50,7 @@ const getPlaylistDetail = async (req, res) => {
             SELECT
                 p.playlist_id,
                 p.playlist_code,
+                p.user_id,
                 p.name,
                 p.description,
                 p.is_public,

@@ -1,36 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SearchBox from "../../components/searchBox";
 import Filter from "../../components/filterBtn";
 import Create from "../../components/createBtn";
 
-/* ── Icons ──────────────────────────────────────────────────────────────── */
-const PlusIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    className="w-4 h-4"
-  >
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-const FilterIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    className="w-4 h-4"
-  >
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-  </svg>
-);
-
 export default function MusicPage() {
-  const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Music");
   const [music, setMusic] = useState([]);
@@ -38,7 +12,6 @@ export default function MusicPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState(null); // ✅ เก็บ ID เพลงที่เลือกดูรายละเอียด
 
   const [formData, setFormData] = useState({
     music_code: "",
@@ -57,10 +30,11 @@ export default function MusicPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  // --- Fetch Data Functions ---
+
+  const ITEMS_PER_PAGE = 20;
+
   useEffect(() => {
     const fetchGenres = async () => {
-      console.log("ค่าจาก ENV:", import.meta.env.VITE_API_URL);
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/genres`);
       const data = await res.json();
       setAllGenres(data);
@@ -77,7 +51,6 @@ export default function MusicPage() {
         ]);
         const albumData = await albumRes.json();
         const artistData = await artistRes.json();
-
         setAlbums(albumData.data || albumData);
         setArtists(artistData.data || artistData);
       } catch (error) {
@@ -93,24 +66,12 @@ export default function MusicPage() {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/music?page=${currentPage}&search=${searchQuery}&genreId=${selectedGenre}`,
       );
-
-      // ถ้า Server ส่ง 500 กลับมา ให้หยุดทำงานและแจ้งเตือน
-      if (!response.ok) {
-        throw new Error(`Server Error: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Server Error: ${response.status}`);
       const result = await response.json();
-
-      // ✅ ใช้ Optional Chaining (?.) เพื่อป้องกันการอ่านค่าจาก undefined
-      // และใส่ค่า Default (||) ไว้เสมอ
-      const musicData = result?.data || [];
-      const totalPagesCount = result?.pagination?.totalPages || 1;
-
-      setMusic(musicData);
-      setTotalPages(totalPagesCount);
+      setMusic(result.data || []);
+      setTotalPages(result.pagination?.totalPages || 1);
     } catch (error) {
       console.error("Fetch Error:", error);
-      // ✅ ถ้า Error ให้ Reset ค่าเป็นสถานะที่ปลอดภัย หน้าเว็บจะได้ไม่พัง
       setMusic([]);
       setTotalPages(1);
     } finally {
@@ -119,31 +80,27 @@ export default function MusicPage() {
   };
 
   useEffect(() => {
-    // ใช้ Debounce เพื่อไม่ให้ยิง API ถี่เกินไปตอนพิมพ์
     const delay = setTimeout(() => {
       fetchMusic();
     }, 500);
-
     return () => clearTimeout(delay);
   }, [currentPage, searchQuery, selectedGenre]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedGenre]);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      setSearchQuery(searchTerm); // เมื่อกด Enter ให้เอาสิ่งที่พิมพ์ไปใส่ใน searchQuery
-      setCurrentPage(1); // กลับไปหน้าแรกทุกครั้งที่เริ่มค้นหาใหม่
+      setSearchQuery(searchTerm);
+      setCurrentPage(1);
     }
   };
-  // --- Event Handlers ---
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const val =
-      name === "album_id" || name === "artist_id" || name === "duration"
-        ? value === ""
-          ? ""
-          : parseInt(value)
+    const val = (name === "album_id" || name === "artist_id" || name === "duration")
+        ? (value === "" ? "" : parseInt(value))
         : value;
     setFormData((prev) => ({ ...prev, [name]: val }));
   };
@@ -151,26 +108,14 @@ export default function MusicPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/music`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        },
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/music`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
       if (response.ok) {
         setIsModalOpen(false);
-        setFormData({
-          music_code: "",
-          title: "",
-          duration: "",
-          release_date: "",
-          artist_id: "",
-          genres: [],
-          is_explicit: false,
-          file_url: "",
-        });
+        setFormData({ music_code: "", title: "", duration: "", release_date: "", artist_id: "", genres: [], is_explicit: false, file_url: "" });
         fetchMusic();
       }
     } catch (error) {
@@ -191,111 +136,57 @@ export default function MusicPage() {
   const handleDelete = async (id) => {
     if (!window.confirm("คุณเเน่ใจหรือไม่ว่าต้องการลบเพลงนี้?")) return;
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/music/${id}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/music/${id}`, { method: "DELETE" });
       if (response.ok) {
         fetchMusic();
-        alert("ลบข้อมูลสำเร็จ");
-        navigate("/music");
-      } else {
-        const errorData = await response.json();
-        alert(`ลบไม่สำเร็จ: ${errorData.error}`);
       }
     } catch (error) {
       console.error("Error deleting music:", error);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
   };
 
   return (
     <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
-      <>
-        {/* ── Tabs ── */}
-        <div className="flex gap-8 border-b border-[#333] pl-8 pt-3">
-          {["Music", "Album"].map((tab) => (
-            <button
-              key={tab}
-              // ✅ แก้ไข: navigate ไปยัง path ที่เป็นตัวพิมพ์เล็กตามชื่อ tab
-              onClick={() => navigate(`/${tab.toLowerCase()}`)}
-              className={`pb-3 text-sm font-semibold transition-all ${
-                activeTab === tab
-                  ? "text-[#1DB954] border-b-2 border-[#1DB954]"
-                  : "text-gray-400"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+      {/* ── Tabs ── */}
+      <div className="flex gap-8 border-b border-[#333] pl-8 pt-3">
+        <button onClick={() => navigate("/music")} className="pb-3 text-sm font-semibold text-[#1DB954] border-b-2 border-[#1DB954]">Music</button>
+        <button onClick={() => navigate("/album")} className="pb-3 text-sm font-semibold text-gray-400">Album</button>
+      </div>
 
-        {/* ── Toolbar ── */}
-        <div className="px-8 flex flex-col gap-5">
-          <div className="flex justify-between items-center mt-2">
-            <div className="flex gap-3 items-center">
-              <div className="relative">
-                <SearchBox placeholder="Search music..." />
-              </div>
-              <button
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-2 px-4 py-1.5 bg-transparent border rounded-md text-sm transition-colors ${
-                  selectedGenre
-                    ? "border-[#1DB954] text-[#1DB954]"
-                    : "border-[#444] text-gray-300"
-                } hover:border-gray-500`}
-              >
-                <FilterIcon />
-                {selectedGenre
-                  ? allGenres.find((g) => g.genre_id == selectedGenre)
-                      ?.genre_name
-                  : "Filter"}
-              </button>
+      {/* ── Toolbar ── */}
+      <div className="px-8 flex flex-col gap-5">
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex gap-3 items-center">
+            <SearchBox
+              placeholder="Search music..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <div className="relative">
+              <Filter onClick={() => setIsFilterOpen(!isFilterOpen)} active={!!selectedGenre} />
               {isFilterOpen && (
-                <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2 animate-in fade-in zoom-in duration-150">
-                  <button
-                    onClick={() => {
-                      setSelectedGenre("");
-                      setIsFilterOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-[#333] rounded-md"
-                  >
-                    All Genres
-                  </button>
+                <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2">
+                  <button onClick={() => { setSelectedGenre(""); setIsFilterOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-[#333] rounded-md">All Genres</button>
                   <div className="h-[1px] bg-[#333] my-1" />
                   {allGenres.map((genre) => (
-                    <button
-                      key={genre.genre_id}
-                      onClick={() => {
-                        setSelectedGenre(genre.genre_id);
-                        setIsFilterOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                        selectedGenre == genre.genre_id
-                          ? "text-[#1DB954] bg-[#1DB954]/10"
-                          : "text-gray-300 hover:bg-[#333]"
-                      }`}
-                    >
-                      {genre.genre_name}
-                    </button>
+                    <button key={genre.genre_id} onClick={() => { setSelectedGenre(genre.genre_id); setIsFilterOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${selectedGenre == genre.genre_id ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}>{genre.genre_name}</button>
                   ))}
                 </div>
               )}
             </div>
-            <Create text="Music" onClick={() => setIsModalOpen(true)} />
           </div>
+          <Create text="Music" onClick={() => setIsModalOpen(true)} />
         </div>
 
         {/* ── Data Table ── */}
-        <div className="w-19/20 bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden mt-2 shadow-xl flex flex-col self-center">
-          <div className="overflow-y-auto max-h-[440px] custom-scrollbar">
+        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2 flex flex-col">
+          <div className="overflow-x-auto max-h-[496px] overflow-y-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-[#252525]">
                 <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
-                  <th className="px-6 py-4 w-12">#</th>
-                  <th className="px-6 py-4">Music Code</th>
+                  <th className="px-6 py-4 w-12 text-center">#</th>
+                  <th className="px-6 py-4">Code</th>
                   <th className="px-6 py-4">Title</th>
                   <th className="px-6 py-4">Artist</th>
                   <th className="px-6 py-4">Release Date</th>
@@ -305,65 +196,30 @@ export default function MusicPage() {
               </thead>
               <tbody className="divide-y divide-[#333]">
                 {loading ? (
-                  // ✅ แสดง Skeleton แทนคำว่า Loading
-                  [...Array(5)].map((_, index) => (
+                  [...Array(7)].map((_, index) => (
                     <tr key={index} className="animate-pulse h-[64px]">
-                      <td colSpan="7" className="px-6 py-5">
-                        <div className="h-4 bg-[#333] rounded w-full"></div>
-                      </td>
+                      <td colSpan="7" className="px-6 py-5"><div className="h-4 bg-[#333] rounded w-full"></div></td>
                     </tr>
                   ))
                 ) : music.length > 0 ? (
                   music.map((m, i) => (
-                    <tr
-                      key={m.music_id || i}
-                      className="hover:bg-[#2a2a2a] transition-colors group h-[64px]"
-                    >
-                      <td className="px-6 py-5 text-sm font-bold text-gray-300">
-                        {(currentPage - 1) * 20 + (i + 1)}
-                      </td>
-                      <td className="px-6 py-5 text-sm font-bold text-gray-300">
-                        {m.music_code}
-                      </td>
-                      <td className="px-6 py-5 text-sm font-medium text-gray-300">
-                        {m.title}
-                      </td>
-                      <td className="px-6 py-5 text-sm text-gray-400">
-                        {m.artist_names || "Unknown Artist"}
-                      </td>
-                      <td className="px-6 py-5 text-sm text-gray-400">
-                        {m.release_date ? m.release_date.split("T")[0] : "-"}
-                      </td>
-                      <td className="px-6 py-5 text-sm text-gray-400">
-                        {m.genre_names || "No Genre"}
-                      </td>
-                      <td className="px-6 py-5">
+                    <tr key={m.music_id || i} className="hover:bg-[#2a2a2a] transition-colors h-[64px] group">
+                      <td className="px-6 py-5 text-sm font-bold text-gray-300 text-center">{(currentPage - 1) * ITEMS_PER_PAGE + (i + 1)}</td>
+                      <td className="px-6 py-5 text-sm font-bold text-gray-300 truncate max-w-[120px]">{m.music_code}</td>
+                      <td className="px-6 py-5 text-sm font-medium text-gray-300 truncate max-w-[200px]">{m.title}</td>
+                      <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[150px]">{m.artist_names || "Unknown"}</td>
+                      <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[120px]">{m.release_date?.split("T")[0]}</td>
+                      <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[150px]">{m.genre_names || "-"}</td>
+                      <td className="px-6 py-5 text-right">
                         <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => navigate(`/music/${m.music_id}`)}
-                            className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
-                          >
-                            Detail
-                          </button>
-                          <button
-                            onClick={() => handleDelete(m.music_id)}
-                            className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => navigate(`/music/${m.music_id}`)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]">Detail</button>
+                          <button onClick={() => handleDelete(m.music_id)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">Delete</button>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      className="px-6 py-10 text-center text-gray-500"
-                    >
-                      No music found
-                    </td>
-                  </tr>
+                  <tr><td colSpan="7" className="px-6 py-20 text-center text-gray-500">No music found</td></tr>
                 )}
               </tbody>
             </table>
@@ -372,227 +228,62 @@ export default function MusicPage() {
 
         {/* ── Pagination ── */}
         <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2 ">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
-              currentPage === 1
-                ? "opacity-30 cursor-not-allowed"
-                : "hover:bg-[#333] text-gray-300"
-            }`}
-          >
-            ‹
-          </button>
-          {[...Array(totalPages)].map((_, index) => {
-            const pageNum = index + 1;
-            return (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${
-                  currentPage === pageNum
-                    ? "bg-[#1DB954] border-[#1DB954] text-black scale-105"
-                    : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"
-                }`}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
-              currentPage === totalPages
-                ? "opacity-30 cursor-not-allowed"
-                : "hover:bg-[#333] text-gray-300"
-            }`}
-          >
-            »
-          </button>
+          <button disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] hover:bg-[#333] disabled:opacity-30`}> ‹ </button>
+          {[...Array(totalPages)].map((_, index) => (
+            <button key={index + 1} onClick={() => setCurrentPage(index + 1)} className={`w-10 h-10 rounded-lg border text-sm font-bold transition-all ${currentPage === index + 1 ? "bg-[#1DB954] text-black" : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"}`}>{index + 1}</button>
+          ))}
+          <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] hover:bg-[#333] disabled:opacity-30`}> » </button>
         </div>
-      </>
+      </div>
 
       {/* ── Modal Create ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">
-                Create new music
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white text-xl"
-              >
-                x
+              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Music</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Code</label>
-                <input
-                  name="music_code"
-                  value={formData.music_code}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm "
-                  placeholder="MUS-XXX"
-                  required
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase">Code</label>
+                <input name="music_code" value={formData.music_code} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Title</label>
-                <input
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">
-                  Duration (sec)
-                </label>
-                <input
-                  type="number"
-                  name="duration"
-                  value={formData.duration}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
-                  required
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase">Title</label>
+                <input name="title" value={formData.title} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">
-                  Release date
-                </label>
-                <input
-                  type="date"
-                  name="release_date"
-                  value={formData.release_date}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm invert-[0.8] brightness-[0.8]"
-                  required
-                />
+                <label className="text-xs font-bold text-gray-400 uppercase">Duration (sec)</label>
+                <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
               </div>
-
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400 uppercase">Release date</label>
+                <input type="date" name="release_date" value={formData.release_date} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none invert-[0.8] brightness-[0.8]" required />
+              </div>
               <div className="col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">File</label>
-                <div className="flex bg-[#3e3e3e] border border-[#555] rounded-md overflow-hidden">
-                  <input
-                    name="file_url"
-                    value={formData.file_url}
-                    onChange={handleChange}
-                    className="bg-transparent flex-1 p-2 outline-none text-white text-sm"
-                    placeholder="URL or path..."
-                  />
-                  <button
-                    type="button"
-                    className="bg-[#444] px-4 py-1 text-sm font-bold border-l border-[#555] hover:bg-[#555]"
-                  >
-                    Upload
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-gray-400 uppercase">File URL</label>
+                <input name="file_url" value={formData.file_url} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" placeholder="https://..." />
               </div>
-
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Album</label>
-                <select
-                  name="album_id"
-                  value={formData.album_id}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm cursor-pointer"
-                  required
-                >
+                <label className="text-xs font-bold text-gray-400 uppercase">Album</label>
+                <select name="album_id" value={formData.album_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
                   <option value="">Select Album</option>
-                  {Array.isArray(albums) &&
-                    albums.map((alb) => {
-                      console.log("Check alb item:", alb); // 👈 เพิ่มบรรทัดนี้เพื่อดูชื่อ property ใน Console
-                      return (
-                        <option key={alb.album_id} value={alb.album_id}>
-                          {alb.album_name}
-                        </option>
-                      );
-                    })}
+                  {albums.map((alb) => (<option key={alb.album_id} value={alb.album_id}>{alb.album_name}</option>))}
                 </select>
               </div>
-
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">
-                  Artist
-                </label>
-                <select
-                  name="artist_id"
-                  value={formData.artist_id}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm cursor-pointer"
-                  required
-                >
+                <label className="text-xs font-bold text-gray-400 uppercase">Artist</label>
+                <select name="artist_id" value={formData.artist_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
                   <option value="">Select Artist</option>
-                  {artists.map((art) => (
-                    <option key={art.artist_id} value={art.artist_id}>
-                      {art.artist_name}
-                    </option>
-                  ))}
+                  {artists.map((art) => (<option key={art.artist_id} value={art.artist_id}>{art.artist_name}</option>))}
                 </select>
               </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">Genre</label>
-                <div className="flex flex-wrap gap-2">
-                  {allGenres.map((g) => {
-                    const isSelected = formData.genres.includes(g.genre_id);
-                    return (
-                      <button
-                        key={g.genre_id}
-                        type="button"
-                        onClick={() => handleGenreToggle(g.genre_id)}
-                        className={`px-4 py-1 rounded-full border text-[11px] font-bold transition-all ${
-                          isSelected
-                            ? "bg-[#1DB954] border-[#1DB954] text-black"
-                            : "border-[#555] text-white hover:border-white"
-                        }`}
-                      >
-                        {g.genre_name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400">
-                  Explicit
-                </label>
-                <select
-                  name="is_explicit"
-                  value={formData.is_explicit}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
-                >
-                  <option value={false}>No</option>
-                  <option value={true}>Yes (Explicit content)</option>
-                </select>
-              </div>
-
-              <div className="col-span-2 flex justify-end gap-3 mt-6 border-t border-[#333] pt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2 rounded-lg border border-[#666] font-bold text-white hover:bg-[#444] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-8 py-2 rounded-lg border border-[#1DB954] text-[#1DB954] font-bold hover:bg-[#1DB954] hover:text-black transition-all"
-                >
-                  Create
-                </button>
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/5 col-span-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors">Cancel</button>
+                <button type="submit" className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95">Create Music</button>
               </div>
             </form>
           </div>

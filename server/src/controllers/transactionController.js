@@ -1,6 +1,6 @@
 const db = require("../db/pool");
 
-// GET /api/transactions — list all with pagination + search + filter
+
 const getAllTransactions = async (req, res) => {
   try {
     const { search, status, page: rawPage = 1 } = req.query;
