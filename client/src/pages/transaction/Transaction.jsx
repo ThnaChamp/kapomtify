@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:4567") + "/api";
 
 const STATUS_STYLE = {
-  completed: { label: "SUCCESS", color: "#1db954", dot: "#1db954", border: "#1db954" },
-  failed:    { label: "FAILED",  color: "#e05252", dot: "#e05252", border: "#e05252" },
-  pending:   { label: "PENDING", color: "#e0c452", dot: "#e0c452", border: "#e0c452" },
+  completed: { label: "SUCCESS",  color: "#1db954", border: "#1db954" },
+  failed:    { label: "FAILED",   color: "#e05252", border: "#e05252" },
+  pending:   { label: "PENDING",  color: "#e0c452", border: "#e0c452" },
+  refunded:  { label: "REFUNDED", color: "#888",    border: "#888"    },
 };
 
 const PAYMENT_SVG = {
@@ -37,6 +38,7 @@ const fmtDate = (iso) => {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
 };
 
+// ── Status Badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const key = (status || "").toLowerCase();
   const s = STATUS_STYLE[key] || STATUS_STYLE.pending;
@@ -47,12 +49,138 @@ const StatusBadge = ({ status }) => {
       borderRadius: 20, padding: "3px 12px",
       fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", whiteSpace: "nowrap",
     }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
       {s.label}
     </span>
   );
 };
 
+const Chevron = ({ open }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+    style={{ transition: "transform .2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+);
+
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+const DetailPanel = ({ transactionId, currency, onRefund }) => {
+  const [rows, setRows]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [refunding, setRefunding] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/transactions/${transactionId}/detail`)
+      .then((r) => r.json())
+      .then((data) => { setRows(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [transactionId]);
+
+  const cur = currency || "THB";
+
+  const handleViewInvoice = () => {
+    window.open(`${API_BASE}/transactions/${transactionId}/invoice`, "_blank");
+  };
+
+  const handleRefund = async () => {
+    if (!window.confirm("ยืนยันการ Refund Transaction นี้?")) return;
+    setRefunding(true);
+    try {
+      const res = await fetch(`${API_BASE}/transactions/${transactionId}/refund`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Refund ไม่สำเร็จ");
+      onRefund && onRefund();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setRefunding(false);
+    }
+  };
+
+  return (
+    <div style={{ background: "#0d0d0d", borderTop: "1px solid #222", padding: "18px 24px 20px 56px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        {/* Table */}
+        <div style={{ flex: 1 }}>
+          <p style={{ color: "#aaa", fontSize: 11, fontWeight: 700, marginBottom: 12, letterSpacing: "0.07em" }}>
+            TRANSACTION DETAIL (ITEM)
+          </p>
+          {loading ? (
+            <p style={{ color: "#555", fontSize: 12 }}>กำลังโหลด...</p>
+          ) : rows.length === 0 ? (
+            <p style={{ color: "#555", fontSize: 12 }}>ไม่มีรายละเอียด</p>
+          ) : (
+            <table style={{ borderCollapse: "collapse", minWidth: 500 }}>
+              <thead>
+                <tr>
+                  {["Plan code","Plan description","Unit Price","Qty","Period covered"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", fontSize: 11, color: "#666", fontWeight: 600, padding: "0 20px 8px 0", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.plan_code || "—"}</td>
+                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.plan_description || "—"}</td>
+                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.unit_price}{cur}</td>
+                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.quantity}</td>
+                    <td style={{ padding: "6px 0 6px 0", fontSize: 12, color: "#ccc" }}>
+                      {r.period_covered ? String(r.period_covered).slice(0,10) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 140 }}>
+          <button
+            onClick={handleViewInvoice}
+            style={{
+              background: "#1a1a1a", color: "#d4d4d4",
+              border: "1px solid #444", borderRadius: 7,
+              padding: "8px 14px", fontSize: 12, fontWeight: 600,
+              cursor: "pointer", whiteSpace: "nowrap",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#888")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#444")}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            View Invoice PDF
+          </button>
+
+          <button
+            onClick={handleRefund}
+            disabled={refunding}
+            style={{
+              background: "transparent", color: "#e05252",
+              border: "1.5px solid #e05252", borderRadius: 7,
+              padding: "8px 14px", fontSize: 12, fontWeight: 600,
+              cursor: refunding ? "default" : "pointer", whiteSpace: "nowrap",
+              opacity: refunding ? 0.6 : 1,
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+            onMouseEnter={(e) => !refunding && (e.currentTarget.style.background = "#2a0a0a")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+            </svg>
+            {refunding ? "กำลัง Refund..." : "Refund This Item"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Confirm Modal ─────────────────────────────────────────────────────────────
 const ConfirmModal = ({ target, onConfirm, onCancel }) => (
   <div style={{ position: "fixed", inset: 0, background: "#000b", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
     <div style={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 12, padding: "28px 32px", width: 340, textAlign: "center" }}>
@@ -68,14 +196,11 @@ const ConfirmModal = ({ target, onConfirm, onCancel }) => (
 
 const PagBtn = ({ children, active, disabled, onClick }) => (
   <button onClick={onClick} disabled={disabled} style={{
-    width: 32, height: 32,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    background: active ? "#1db954" : "#1a1a1a",
-    color: active ? "#000" : "#888",
+    width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+    background: active ? "#1db954" : "#1a1a1a", color: active ? "#000" : "#888",
     border: "1px solid #2a2a2a", borderRadius: 6,
     fontSize: 13, fontWeight: active ? 700 : 400,
-    cursor: disabled ? "default" : "pointer",
-    opacity: disabled ? 0.35 : 1,
+    cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.35 : 1,
   }}>{children}</button>
 );
 
@@ -87,6 +212,7 @@ const Transaction = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState(null);
+  const [expandedId, setExpandedId]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [toast, setToast]               = useState(null);
 
@@ -121,6 +247,7 @@ const Transaction = () => {
       const res = await fetch(`${API_BASE}/transactions/${deleteTarget.transaction_id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       showToast(`ลบ ${deleteTarget.transactions_code || "#" + deleteTarget.transaction_id} เรียบร้อยแล้ว`);
+      setExpandedId(null);
       fetchData(pagination.currentPage);
     } catch (err) {
       showToast("ลบไม่สำเร็จ: " + err.message, "error");
@@ -129,10 +256,24 @@ const Transaction = () => {
     }
   };
 
+  const handleRefundDone = () => {
+    showToast("Refund สำเร็จแล้ว");
+    fetchData(pagination.currentPage);
+  };
+
+  const toggleExpand = (id) => setExpandedId((prev) => (prev === id ? null : id));
+
+  const TH = ({ children }) => (
+    <th style={{
+      padding: "14px 20px", textAlign: "left",
+      fontSize: 11, color: "#888", fontWeight: 600,
+      letterSpacing: "0.08em", borderBottom: "1px solid #2a2a2a", whiteSpace: "nowrap",
+    }}>{children}</th>
+  );
+
   return (
     <div style={{ padding: "28px 32px", minHeight: "100vh", fontFamily: "inherit" }}>
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: "fixed", top: 20, right: 24, zIndex: 1000,
@@ -146,14 +287,12 @@ const Transaction = () => {
         </div>
       )}
 
-      {/* Page title */}
       <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 600, margin: "0 0 20px", letterSpacing: "-0.01em" }}>
         Transaction
       </h1>
 
-      {/* Toolbar — matches Music & Album layout */}
+      {/* Toolbar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        {/* Search */}
         <div style={{ position: "relative" }}>
           <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", pointerEvents: "none" }}
             width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -171,8 +310,6 @@ const Transaction = () => {
             }}
           />
         </div>
-
-        {/* Filter button — same as Music & Album */}
         <button onClick={() => fetchData(1)} style={{
           display: "flex", alignItems: "center", gap: 6,
           padding: "8px 16px", background: "transparent",
@@ -184,10 +321,7 @@ const Transaction = () => {
           </svg>
           Filter
         </button>
-
         <div style={{ flex: 1 }} />
-
-        {/* Status filter */}
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{
           padding: "8px 14px", background: "transparent",
           border: "1px solid #333", borderRadius: 7,
@@ -198,108 +332,98 @@ const Transaction = () => {
           <option value="completed">SUCCESS</option>
           <option value="failed">FAILED</option>
           <option value="pending">PENDING</option>
+          <option value="refunded">REFUNDED</option>
         </select>
       </div>
 
-      {/* Table — Music & Album style */}
+      {/* Table */}
       <div style={{ border: "1px solid #2a2a2a", borderRadius: 8, overflow: "hidden" }}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#444", fontSize: 13 }}>กำลังโหลด...</div>
         ) : error ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#e05252", fontSize: 13 }}>⚠ {error}</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#1a1a1a" }}>
-                  {["#","CODE","CREATE AT","USER","PLAN","PAYMENT METHOD","STATUS",""].map((h, i) => (
-                    <th key={i} style={{
-                      padding: "14px 20px",
-                      textAlign: i === 7 ? "right" : "left",
-                      fontSize: 11, color: "#888", fontWeight: 600,
-                      letterSpacing: "0.08em",
-                      borderBottom: "1px solid #2a2a2a",
-                      whiteSpace: "nowrap",
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: "56px 0", color: "#444", fontSize: 13 }}>
-                      ไม่พบข้อมูล
-                    </td>
-                  </tr>
-                ) : transactions.map((tx, i) => {
-                  const rowNo = (pagination.currentPage - 1) * 10 + i + 1;
-                  const isEven = i % 2 === 1;
-                  return (
-                    <tr key={tx.transaction_id}
-                      style={{
-                        background: isEven ? "#141414" : "#111",
-                        transition: "background .1s",
-                        cursor: "default",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#1e1e1e")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = isEven ? "#141414" : "#111")}
-                    >
-                      {/* # */}
-                      <td style={{ padding: "16px 20px", fontSize: 14, color: "#666", borderBottom: "1px solid #222", width: 40, fontWeight: 600 }}>{rowNo}</td>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#1a1a1a" }}>
+                <TH>#</TH>
+                <TH>CODE</TH>
+                <TH>CREATE AT</TH>
+                <TH>USER</TH>
+                <TH>PAYMENT METHOD</TH>
+                <TH>AMOUNT</TH>
+                <TH>STATUS</TH>
+                <th style={{ padding: "14px 20px", borderBottom: "1px solid #2a2a2a" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "56px 0", color: "#444", fontSize: 13 }}>ไม่พบข้อมูล</td></tr>
+              ) : transactions.map((tx, i) => {
+                const rowNo  = (pagination.currentPage - 1) * 10 + i + 1;
+                const isOpen = expandedId === tx.transaction_id;
+                const isEven = i % 2 === 1;
+                const rowBg  = isEven ? "#141414" : "#111";
 
-                      {/* Code */}
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#fff", borderBottom: "1px solid #222", fontWeight: 600 }}>
+                return (
+                  <React.Fragment key={tx.transaction_id}>
+                    <tr
+                      style={{ background: isOpen ? "#1a1a1a" : rowBg, transition: "background .1s", cursor: "pointer" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#1e1e1e")}
+                      onMouseLeave={(e) => !isOpen && (e.currentTarget.style.background = rowBg)}
+                      onClick={() => toggleExpand(tx.transaction_id)}
+                    >
+                      <td style={{ padding: "16px 20px", fontSize: 14, color: "#666", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222", width: 40 }}>{rowNo}</td>
+                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#fff", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222" }}>
                         {tx.transactions_code || `TX-${String(tx.transaction_id).padStart(4,"0")}`}
                       </td>
-
-                      {/* Create at */}
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#aaa", borderBottom: "1px solid #222" }}>
-                        {fmtDate(tx.transaction_date)}
-                      </td>
-
-                      {/* User */}
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: "1px solid #222" }}>
-                        {tx.display_name || tx.username || "—"}
-                      </td>
-
-                      {/* Plan */}
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: "1px solid #222" }}>
-                        {tx.plan_name || "—"}
-                      </td>
-
-                      {/* Payment method */}
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: "1px solid #222" }}>
+                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#aaa", borderBottom: isOpen ? "none" : "1px solid #222" }}>{fmtDate(tx.transaction_date)}</td>
+                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: isOpen ? "none" : "1px solid #222" }}>{tx.display_name || tx.username || "—"}</td>
+                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: isOpen ? "none" : "1px solid #222" }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#bbb" }}>
                           <span style={{ opacity: 0.55 }}>{PAYMENT_SVG[tx.payment_method]}</span>
                           {tx.payment_method || "—"}
                         </span>
                       </td>
-
-                      {/* Status */}
-                      <td style={{ padding: "16px 20px", borderBottom: "1px solid #222" }}>
+                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#fff", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222", whiteSpace: "nowrap" }}>
+                        {tx.amount || 0} {tx.currency || "THB"}
+                      </td>
+                      <td style={{ padding: "16px 20px", borderBottom: isOpen ? "none" : "1px solid #222" }}>
                         <StatusBadge status={tx.status} />
                       </td>
-
-                      {/* Actions */}
-                      <td style={{ padding: "16px 20px", borderBottom: "1px solid #222", textAlign: "right", whiteSpace: "nowrap" }}>
-                        <button
-                          onClick={() => setDeleteTarget(tx)}
-                          style={{
-                            background: "transparent", color: "#e05252",
-                            border: "1px solid #333", borderRadius: 6,
-                            padding: "5px 14px", fontSize: 12, cursor: "pointer",
-                            transition: "border-color .15s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#e05252")}
-                          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333")}
-                        >Delete</button>
+                      <td style={{ padding: "16px 20px", borderBottom: isOpen ? "none" : "1px solid #222", textAlign: "right" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx); }}
+                            style={{
+                              background: "transparent", color: "#e05252",
+                              border: "1px solid #333", borderRadius: 6,
+                              padding: "4px 12px", fontSize: 12, cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#e05252")}
+                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333")}
+                          >Delete</button>
+                          <span style={{ color: "#555" }}><Chevron open={isOpen} /></span>
+                        </div>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+
+                    {isOpen && (
+                      <tr style={{ background: "#0d0d0d" }}>
+                        <td colSpan={8} style={{ padding: 0, borderBottom: "1px solid #2a2a2a" }}>
+                          <DetailPanel
+                            transactionId={tx.transaction_id}
+                            currency={tx.currency}
+                            onRefund={handleRefundDone}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 

@@ -9,10 +9,7 @@ const genreRoutes = require('./routes/genreRoutes');
 const userRoutes = require('./routes/userRoutes');
 const playlistRoutes = require('./routes/playlistRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-
 const transactionRoutes = require('./routes/transactionRoutes');
-// const subscriptionRoutes = require('./routes/subscriptionRoutes');
-
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const chartRoutes = require('./routes/chartRoutes');
 
