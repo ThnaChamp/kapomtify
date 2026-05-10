@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4567";
 
 const STATUS_STYLE = {
   completed: { label: "SUCCESS", color: "#1db954", dot: "#1db954", border: "#1db954" },
@@ -101,7 +101,7 @@ const Transaction = () => {
       const p = new URLSearchParams({ page });
       if (search)       p.append("search", search);
       if (statusFilter) p.append("status", statusFilter);
-      const res  = await fetch(`${API_BASE}/transactions?${p}`);
+      const res  = await fetch(`${API_BASE}/api/transactions?${p}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setTransactions(json.data || []);
@@ -118,7 +118,7 @@ const Transaction = () => {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await fetch(`${API_BASE}/transactions/${deleteTarget.transaction_id}`, { method: "DELETE" });
+const res = await fetch(`${API_BASE}/api/transactions/${deleteTarget.transaction_id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       showToast(`ลบ ${deleteTarget.transactions_code || "#" + deleteTarget.transaction_id} เรียบร้อยแล้ว`);
       fetchData(pagination.currentPage);
