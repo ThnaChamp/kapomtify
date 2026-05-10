@@ -14,22 +14,17 @@ export default function UserDetailPage() {
     let endpoint = "";
     if (activeTab.includes("Albums")) endpoint = "library-albums";
     else if (activeTab.includes("Artists")) endpoint = "library-artists";
-    // ✅ เช็คให้มั่นใจว่าชื่อ "Playlists" (ตัว s) ตรงกับ Tab ใน UI
     else if (activeTab.includes("Playlists")) endpoint = "library-playlists"; 
     else if (activeTab.includes("Subscription")) endpoint = "sub-history";
+    else if (activeTab.includes("Recommendations")) endpoint = "recommendations";
 
     if (!endpoint) return;
     console.log("Fetching from:", endpoint);
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}/${endpoint}`);
         const result = await res.json();
-
-        // ตรวจสอบโครงสร้าง Response
-        // ถ้า Backend ส่งมาเป็น { data: [...] }
         const actualData = Array.isArray(result) ? result : (result.data || []);
         setTabData(actualData);
-        
-        console.log(`Data for ${endpoint}:`, actualData); // 👈 เพิ่ม log เพื่อดูว่าข้อมูลมาไหม
     } catch (error) {
         console.error("Error fetching tab data:", error);
         setTabData([]);
@@ -60,7 +55,7 @@ useEffect(() => {
       
       {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-xl font-bold mb-2">
-        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/users")}>User</span>
+        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/user")}>User</span>
         <span className="text-gray-500 mx-1">›</span>
         <span className="text-white">{user.display_name || user.username}</span>
       </div>
@@ -97,11 +92,12 @@ useEffect(() => {
       </div>
 
       {/* ── Stats Summary Row ── */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-4 gap-6">
         {[
-          { label: "Save albums", value: user.total_saved_albums || 24 },
-          { label: "Followed artists", value: user.total_followed_artists || 50 },
-          { label: "Playlists", value: user.total_playlists || 10 },
+          { label: "Saved albums", value: user.total_saved_albums || 0 },
+          { label: "Followed artists", value: user.total_followed_artists || 0 },
+          { label: "Playlists", value: user.total_playlists || 0 },
+          { label: "Recommended", value: user.total_recommendations || 0 },
         ].map((stat, i) => (
           <div key={i} className="bg-[#1e1e1e] py-6 rounded-2xl text-center border border-white/5 shadow-sm">
             <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
@@ -119,9 +115,9 @@ useEffect(() => {
             { id: "Albums", label: "Albums", count: user.total_saved_albums || 0 },
             { id: "Artists", label: "Artists", count: user.total_followed_artists || 0 },
             { id: "Playlists", label: "Playlists", count: user.total_playlists || 0 },
+            { id: "Recommendations", label: "Recommendations", count: user.total_recommendations || 0 },
             { id: "Subscription", label: "Subscription history", count: null },
         ].map((tab) => {
-            // สร้างชื่อ Tab สำหรับเช็ค Active และแสดงผล
             const tabKey = tab.count !== null ? `${tab.label} ${tab.count}` : tab.label;
 
             return (
@@ -155,7 +151,7 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Data Table ที่ปรับขนาด Font Header และ Data */}
+        {/* Data Table */}
         <div className="px-6 pb-6">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -163,21 +159,24 @@ useEffect(() => {
                 <th className="pb-4 px-3 w-16">#</th>
                 <th className="pb-4 px-3 text-center w-24">Cover</th>
                 
-                {/* ปรับเปลี่ยนหัวข้อตามแท็บที่เลือก */}
                 <th className="pb-4 px-3">
                   {activeTab.includes("Artists") ? "Artist" : 
                   activeTab.includes("Playlists") ? "Playlist Name" : 
-                  activeTab.includes("Subscription") ? "Plan Name" : "Album"}
+                  activeTab.includes("Subscription") ? "Plan Name" : 
+                  activeTab.includes("Recommendations") ? "Music Title" : "Album"}
                 </th>
                 
                 <th className="pb-4 px-3">
                 {!activeTab.includes("Artists") && !activeTab.includes("Subscription") ? "Artist" : ""}
               </th>
               
-              <th className="pb-4 px-3">Type</th>
+              <th className="pb-4 px-3">
+                {activeTab.includes("Recommendations") ? "Score" : "Type"}
+              </th>
               <th className="pb-4 px-3">
                 {activeTab.includes("Artists") ? "Followed At" : 
-                activeTab.includes("Subscription") ? "Started At" : "Saved At"}
+                activeTab.includes("Subscription") ? "Started At" : 
+                activeTab.includes("Recommendations") ? "Generated At" : "Saved At"}
               </th>
               </tr>
             </thead>
@@ -189,18 +188,15 @@ useEffect(() => {
                     <img 
                       src={item.cover_image_url || item.cover || "https://via.placeholder.com/150"} 
                       className="w-14 h-14 rounded-xl object-cover mx-auto shadow-md"
-                      onError={(e) => { e.target.src = "https://via.placeholder.com/150" }} // กันรูปพัง
+                      onError={(e) => { e.target.src = "https://via.placeholder.com/150" }} 
                     />
                   </td>
                   
-                  {/* ชื่อหลัก */}
                   <td className="py-4 px-3 font-extrabold text-white text-[15px]">
                     {item.album_name || item.artist_name || item.album}
                   </td>
                   
-                  {/* ชื่อศิลปินรอง (จะแสดงเฉพาะเมื่อไม่ใช่หน้า Artist) */}
                   <td className="py-4 px-3 text-gray-300 font-bold text-[15px]">
-                  {/* ถ้าไม่ใช่หน้า Artists และไม่ใช่หน้า Subscription ถึงจะแสดงชื่อศิลปิน */}
                   {!activeTab.includes("Artists") && !activeTab.includes("Subscription") 
                     ? (item.artist_name || item.artist || "-") 
                     : ""
@@ -208,7 +204,9 @@ useEffect(() => {
                 </td>
                   
                   <td className="py-4 px-3 text-gray-400 text-sm font-medium">
-                    {item.type || "Standard"}
+                    {activeTab.includes("Recommendations") ? (
+                      <span className="text-[#1DB954] font-black">{item.score} ★</span>
+                    ) : (item.type || "Standard")}
                   </td>
                   
                   <td className="py-4 px-3 text-gray-500 text-sm font-medium">
