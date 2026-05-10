@@ -100,7 +100,7 @@ const Transaction = () => {
     try {
       const p = new URLSearchParams({ page });
       if (search)       p.append("search", search);
-      if (statusFilter) p.append("status", statusFilter);
+      if (statusFilter) p.append("status", statusFilter); 
       const res  = await fetch(`${API_BASE}/transactions?${p}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
