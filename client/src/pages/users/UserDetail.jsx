@@ -16,7 +16,6 @@ export default function UserDetailPage() {
     else if (activeTab.includes("Artists")) endpoint = "library-artists";
     else if (activeTab.includes("Playlists")) endpoint = "library-playlists"; 
     else if (activeTab.includes("Subscription")) endpoint = "sub-history";
-    else if (activeTab.includes("Recommendations")) endpoint = "recommendations";
 
     if (!endpoint) return;
     console.log("Fetching from:", endpoint);
@@ -92,12 +91,11 @@ useEffect(() => {
       </div>
 
       {/* ── Stats Summary Row ── */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         {[
           { label: "Saved albums", value: user.total_saved_albums || 0 },
           { label: "Followed artists", value: user.total_followed_artists || 0 },
           { label: "Playlists", value: user.total_playlists || 0 },
-          { label: "Recommended", value: user.total_recommendations || 0 },
         ].map((stat, i) => (
           <div key={i} className="bg-[#1e1e1e] py-6 rounded-2xl text-center border border-white/5 shadow-sm">
             <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
@@ -115,7 +113,6 @@ useEffect(() => {
             { id: "Albums", label: "Albums", count: user.total_saved_albums || 0 },
             { id: "Artists", label: "Artists", count: user.total_followed_artists || 0 },
             { id: "Playlists", label: "Playlists", count: user.total_playlists || 0 },
-            { id: "Recommendations", label: "Recommendations", count: user.total_recommendations || 0 },
             { id: "Subscription", label: "Subscription history", count: null },
         ].map((tab) => {
             const tabKey = tab.count !== null ? `${tab.label} ${tab.count}` : tab.label;
@@ -162,8 +159,7 @@ useEffect(() => {
                 <th className="pb-4 px-3">
                   {activeTab.includes("Artists") ? "Artist" : 
                   activeTab.includes("Playlists") ? "Playlist Name" : 
-                  activeTab.includes("Subscription") ? "Plan Name" : 
-                  activeTab.includes("Recommendations") ? "Music Title" : "Album"}
+                  activeTab.includes("Subscription") ? "Plan Name" : "Album"}
                 </th>
                 
                 <th className="pb-4 px-3">
@@ -171,12 +167,8 @@ useEffect(() => {
               </th>
               
               <th className="pb-4 px-3">
-                {activeTab.includes("Recommendations") ? "Score" : "Type"}
-              </th>
-              <th className="pb-4 px-3">
                 {activeTab.includes("Artists") ? "Followed At" : 
-                activeTab.includes("Subscription") ? "Started At" : 
-                activeTab.includes("Recommendations") ? "Generated At" : "Saved At"}
+                activeTab.includes("Subscription") ? "Started At" : "Saved At"}
               </th>
               </tr>
             </thead>
@@ -202,12 +194,6 @@ useEffect(() => {
                     : ""
                   }
                 </td>
-                  
-                  <td className="py-4 px-3 text-gray-400 text-sm font-medium">
-                    {activeTab.includes("Recommendations") ? (
-                      <span className="text-[#1DB954] font-black">{item.score} ★</span>
-                    ) : (item.type || "Standard")}
-                  </td>
                   
                   <td className="py-4 px-3 text-gray-500 text-sm font-medium">
                     {item.saved_at ? item.saved_at.split('T')[0] : "-"}

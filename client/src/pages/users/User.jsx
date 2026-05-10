@@ -146,7 +146,7 @@ export default function UsersPage() {
                     <td className="px-6 py-5 text-right">
                       <div className="flex gap-2 justify-end">
                         <button 
-                          onClick={() => navigate(`/users/${user.user_id}`)}
+                          onClick={() => navigate(`/user/${user.user_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail

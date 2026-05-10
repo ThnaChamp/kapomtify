@@ -50,6 +50,7 @@ const getPlaylistDetail = async (req, res) => {
             SELECT
                 p.playlist_id,
                 p.playlist_code,
+                p.user_id,
                 p.name,
                 p.description,
                 p.is_public,

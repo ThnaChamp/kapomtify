@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import SearchBox from "../../components/searchBox";
-import Filter from "../../components/filterBtn";
-import Create from "../../components/createBtn";
+import SearchBox from '../../components/searchBox';
+import Filter from '../../components/filterBtn';
+import Create from '../../components/createBtn';
+import Cancel from '../../components/cancelBtn';
+import CreateM from "../../components/createMBtn";
 
 export default function ChartPage() {
   const navigate = useNavigate();
@@ -11,10 +13,7 @@ export default function ChartPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-
+  const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     chart_code: '',
     chart_name: '',
@@ -22,14 +21,37 @@ export default function ChartPage() {
     chart_date: new Date().toISOString().split('T')[0]
   });
 
-  const ITEMS_PER_PAGE = 20;
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users`);
+        const result = await res.json();
+        setUsers(result.data || []);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const fetchCharts = async () => {
     try {
       setLoading(true);
-      // Using /api/playlists for now as a placeholder since chart API might not exist yet
-      // or if it exists, replace with /api/charts
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}&search=${searchQuery}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts?page=${currentPage}`);
       const result = await res.json();
       setCharts(result.data || []);
       setTotalPages(result.pagination?.totalPages || 1);
@@ -41,29 +63,18 @@ export default function ChartPage() {
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => {
-        fetchCharts();
-    }, 500);
-    return () => clearTimeout(delay);
-  }, [currentPage, searchQuery]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-        setSearchQuery(searchTerm);
-        setCurrentPage(1);
-    }
-  };
+    fetchCharts();
+  }, [currentPage]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Placeholder POST to /api/playlists or /api/charts
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -72,6 +83,9 @@ export default function ChartPage() {
         setIsModalOpen(false);
         setFormData({ chart_code: '', chart_name: '', description: '', chart_date: new Date().toISOString().split('T')[0] });
         fetchCharts();
+      } else {
+        const err = await res.json();
+        alert(`สร้างไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
       console.error("Error creating chart:", err);
@@ -81,80 +95,71 @@ export default function ChartPage() {
   const handleDelete = async (id) => {
     if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Chart นี้?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts/${id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         fetchCharts();
+        alert("ลบข้อมูลสำเร็จ");
+      } else {
+        const err = await res.json();
+        alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
       console.error("Error deleting chart:", err);
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
   };
 
   return (
-    <div className="flex flex-col gap-5 p-8 text-[#e0e0e0]">
-      {/* ── Toolbar ── */}
-      <div className="flex justify-between items-center mt-2">
-        <div className="flex gap-3 items-center">
-          <SearchBox
-            placeholder="Search charts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <Filter />
-        </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-4 py-2 rounded-md text-sm transition-transform active:scale-95"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Create Chart
-        </button>
-      </div>
+    <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
+      <div className="px-8 pt-6 flex flex-col gap-5">
 
-      {/* ── Data Table ── */}
-      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
-        <div className="overflow-x-auto max-h-[496px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#252525] text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333] sticky top-0 z-10">
-                <th className="px-6 py-4 w-12">#</th>
-                <th className="px-6 py-4">Code</th>
-                <th className="px-6 py-4">Chart Name</th>
-                <th className="px-6 py-4">Description</th>
-                <th className="px-6 py-4 text-center">Music Count</th>
-                <th className="px-6 py-4 text-right"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#333]">
-              {loading ? (
-                [...Array(7)].map((_, i) => (
-                  <tr key={i} className="animate-pulse h-[64px]">
-                    <td colSpan="6" className="px-6 py-5">
-                      <div className="h-4 bg-[#333] rounded w-full"></div>
+        {/* Toolbar */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-3 items-center">
+            <SearchBox placeholder="Search charts..." />
+            <Filter />
+          </div>
+          <Create text="Chart" onClick={() => setIsModalOpen(true)} />
+        </div>
+
+        {/* Table */}
+        <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl flex flex-col">
+          <div className="overflow-y-auto max-h-[440px] custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10 bg-[#252525]">
+                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
+                  <th className="px-6 py-4">#</th>
+                  <th className="px-6 py-4">Code</th>
+                  <th className="px-6 py-4">Chart Name</th>
+                  <th className="px-6 py-4">Description</th>
+                  <th className="px-6 py-4">Chart Date</th>
+                  <th className="px-6 py-4 text-center">Total music</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#333]">
+                {charts.length > 0 ? charts.map((c, i) => (
+                  <tr key={c.chart_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px]">
+                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{(currentPage - 1) * 10 + (i + 1)}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-gray-300">{c.chart_code || '-'}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-300">{c.chart_name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400 truncate max-w-[200px]">{c.description || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">
+                      {c.chart_date ? c.chart_date.split('T')[0] : '-'}
                     </td>
-                  </tr>
-                ))
-              ) : charts.length > 0 ? (
-                charts.map((c, i) => (
-                  <tr key={c.playlist_id} className="hover:bg-[#2a2a2a] transition-colors h-[64px] group">
-                    <td className="px-6 py-5 text-sm font-bold text-gray-300">
-                      {(currentPage - 1) * ITEMS_PER_PAGE + (i + 1)}
-                    </td>
-                    <td className="px-6 py-5 text-sm font-bold text-gray-300 truncate max-w-[100px]">{c.playlist_code}</td>
-                    <td className="px-6 py-5 text-sm font-medium text-gray-300 truncate max-w-[200px]">{c.name}</td>
-                    <td className="px-6 py-5 text-sm text-gray-400 truncate max-w-[300px]">{c.description || "-"}</td>
-                    <td className="px-6 py-5 text-sm text-center text-gray-400 font-bold">{c.total_music}</td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="px-6 py-4 text-sm text-center text-gray-400">{c.total_music || 0}</td>
+                    <td className="px-6 py-4">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => navigate(`/charts/${c.playlist_id}`)}
+                          onClick={() => navigate(`/chart/${c.chart_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail
                         </button>
                         <button
-                          onClick={() => handleDelete(c.playlist_id)}
+                          onClick={() => handleDelete(c.chart_id)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Delete
@@ -162,117 +167,103 @@ export default function ChartPage() {
                       </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                    No charts found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-10 text-center text-gray-500 italic">No charts found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* ── Pagination ── */}
-      <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
-        >
-          ‹
-        </button>
-        {[...Array(totalPages)].map((_, index) => {
-          const pageNum = index + 1;
-          return (
-            <button
-              key={pageNum}
-              onClick={() => setCurrentPage(pageNum)}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${currentPage === pageNum ? "bg-[#1DB954] border-[#1DB954] text-black scale-105" : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"}`}
-            >
-              {pageNum}
-            </button>
-          );
-        })}
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
-        >
-          »
-        </button>
+        {/* Pagination */}
+        <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
+          >
+            ‹
+          </button>
+          {[...Array(totalPages)].map((_, index) => {
+            const pageNum = index + 1;
+            return (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${currentPage === pageNum ? "bg-[#1DB954] border-[#1DB954] text-black scale-105" : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200"}`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${currentPage === totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"}`}
+          >
+            »
+          </button>
+        </div>
       </div>
 
       {/* ── Modal Create ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#282828] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Chart</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
+              <h2 className="text-2xl font-bold text-white">Create Chart</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white text-xl">x</button>
             </div>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="grid grid-cols-2 gap-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Chart Code</label>
-                  <input
-                    name="chart_code"
-                    value={formData.chart_code}
-                    onChange={handleChange}
-                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]"
-                    placeholder="CHT-XXX"
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Chart Name</label>
-                  <input
-                    name="chart_name"
-                    value={formData.chart_name}
-                    onChange={handleChange}
-                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]"
-                    required
-                  />
-                </div>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400">Code</label>
+                <input
+                  name="chart_code"
+                  value={formData.chart_code}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
+                  placeholder="C-XXX"
+                  required
+                />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Chart Date</label>
+                <label className="text-xs font-bold text-gray-400">Chart name</label>
+                <input
+                  name="chart_name"
+                  value={formData.chart_name}
+                  onChange={handleChange}
+                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]"
+                  required
+                />
+              </div>
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400">Date</label>
                 <input
                   type="date"
                   name="chart_date"
                   value={formData.chart_date}
                   onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] invert-[0.8] brightness-[1.2]"
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
                   required
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Description</label>
+              <div className="col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-400">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] h-24 resize-none"
-                ></textarea>
+                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm h-24 resize-none"
+                  placeholder="Chart description..."
+                />
               </div>
-              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95"
-                >
-                  Create Chart
-                </button>
+
+              <div className="col-span-2 flex justify-end gap-3 mt-6 border-t border-[#333] pt-6">
+                <Cancel onClick={() => setIsModalOpen(false)} />
+                <CreateM/>
               </div>
             </form>
           </div>

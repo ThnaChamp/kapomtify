@@ -183,7 +183,7 @@ export default function PlaylistsPage() {
                     <td className="px-6 py-5 text-right">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => navigate(`/playlists/${p.playlist_id}`)}
+                          onClick={() => navigate(`/playlist/${p.playlist_id}`)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]"
                         >
                           Detail

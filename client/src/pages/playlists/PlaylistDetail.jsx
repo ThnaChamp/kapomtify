@@ -20,7 +20,9 @@ export default function PlaylistDetailPage() {
     }
   };
 
-  useEffect(() => { fetchDetail(); }, [id]);
+  useEffect(() => { 
+    fetchDetail(); 
+  }, [id]);
 
   const handleDelete = async () => {
     if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Playlist นี้?")) return;
@@ -28,7 +30,7 @@ export default function PlaylistDetailPage() {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/${id}`, { method: "DELETE" });
       if (res.ok) {
         alert("ลบข้อมูลสำเร็จ");
-        navigate("/playlists");
+        navigate("/playlist");
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -51,7 +53,7 @@ export default function PlaylistDetailPage() {
       
       {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-xl font-bold mb-2">
-        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/playlists")}>Playlists</span>
+        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/playlist")}>Playlists</span>
         <span className="text-gray-500 mx-1">›</span>
         <span className="text-white">{data.name}</span>
       </div>
@@ -75,7 +77,7 @@ export default function PlaylistDetailPage() {
             <p className="text-gray-400 italic text-sm">"{data.description}"</p>
           )}
           <div className="flex gap-4 mt-2">
-            <button className="px-6 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg font-bold text-sm hover:bg-[#333] transition-all">Edit</button>
+            {/* Edit button removed */}
             <button onClick={handleDelete} className="px-6 py-2 bg-transparent border border-red-500/30 text-red-500 rounded-lg font-bold text-sm hover:bg-red-500/10 transition-all">Delete</button>
           </div>
         </div>

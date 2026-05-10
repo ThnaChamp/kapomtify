@@ -9,7 +9,8 @@ import AlbumDetail from "./pages/music_album/AlbumDetail";
 import Artist from "./pages/artist/Artist";
 import ArtistDetail from "./pages/artist/ArtistDetail";
 import Chart from "./pages/chart/Chart";
-import Users from "./pages/users/Users";
+import ChartDetail from "./pages/chart/ChartDetail";
+import User from "./pages/users/User";
 import UsersDetail from "./pages/users/UserDetail";
 import SubscriptionPlan from "./pages/subscription_plan/SubscriptionPlans";
 import Playlists from "./pages/playlists/Playlists";
@@ -21,28 +22,30 @@ import Recommendation from "./pages/report/Recommendation";
 
 function App() {
   return (
-      <Routes>
-        <Route element={<Layout/>}>
-          <Route path="/" element={<Dashboard/>} />
-          <Route path="/music" element={<Music/>} />
-          <Route path="/music/:id/" element={<MusicDetail/>}/>
-          <Route path="/album" element={<Album/>} />
-          <Route path="/album/:id/" element={<AlbumDetail/>}/>
-          <Route path="/artist" element={<Artist/>} />
-          <Route path="/artist/:id" element={<ArtistDetail/>} />
-          <Route path="/chart" element={<Chart/>} />
-          <Route path="/user" element={<Users/>} />
-          <Route path="/subscription-plan" element={<SubscriptionPlan/>} />
-          <Route path="/playlist" element={<Playlists/>} />
-          <Route path="/playlist/:id" element={<PlaylistDetail/>} />
-          <Route path="/transaction" element={<Transaction/>} />
-          <Route path="/report/overview" element={<Overview/>} />
-          <Route path="/report/content" element={<Content/>} />
-          <Route path="/report/recommendation" element={<Recommendation/>} />
-        </Route>
-        <Route path="/auth" element={<Auth/>} />
-      </Routes>
-  )
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/music" element={<Music />} />
+        <Route path="/music/:id/" element={<MusicDetail />} />
+        <Route path="/album" element={<Album />} />
+        <Route path="/album/:id/" element={<AlbumDetail />} />
+        <Route path="/artist" element={<Artist />} />
+        <Route path="/artist/:id" element={<ArtistDetail />} />
+        <Route path="/chart" element={<Chart />} />
+        <Route path="/chart/:id" element={<ChartDetail />} />
+        <Route path="/user" element={<User />} />
+        <Route path="/user/:id" element={<UsersDetail />} />
+        <Route path="/subscription-plan" element={<SubscriptionPlan />} />
+        <Route path="/playlist" element={<Playlists />} />
+        <Route path="/playlist/:id" element={<PlaylistDetail />} />
+        <Route path="/transaction" element={<Transaction />} />
+        <Route path="/report/overview" element={<Overview />} />
+        <Route path="/report/content" element={<Content />} />
+        <Route path="/report/recommendation" element={<Recommendation />} />
+      </Route>
+      <Route path="/auth" element={<Auth />} />
+    </Routes>
+  );
 }
 
 export default App;
