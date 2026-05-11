@@ -3,16 +3,19 @@ import { useNavigate } from "react-router-dom";
 import SearchBox from "../../components/searchBox";
 import Filter from "../../components/filterBtn";
 import Create from "../../components/createBtn";
-
+import DeleteModal from "../../components/DeleteModal";
 export default function PlaylistsPage() {
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedVisibility, setSelectedVisibility] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [users, setUsers] = useState([]);
   const userRole = localStorage.getItem('userRole');
   const [formData, setFormData] = useState({
@@ -42,7 +45,8 @@ export default function PlaylistsPage() {
   const fetchPlaylists = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}&search=${searchQuery}`);
+      const url = `${import.meta.env.VITE_API_URL}/api/playlists?page=${currentPage}&search=${searchQuery}&visibility=${selectedVisibility}`;
+      const res = await fetch(url);
       const result = await res.json();
       setPlaylists(result.data || []);
       setTotalPages(result.pagination?.totalPages || 1);
@@ -58,7 +62,7 @@ export default function PlaylistsPage() {
         fetchPlaylists();
     }, 500);
     return () => clearTimeout(delay);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, selectedVisibility]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -98,20 +102,22 @@ export default function PlaylistsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Playlist นี้?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/playlists/${deleteTarget.playlist_id}`, { 
+        method: 'DELETE'
+      });
       if (res.ok) {
         fetchPlaylists();
-        alert("ลบข้อมูลสำเร็จ");
       } else {
         const err = await res.json();
         alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
       console.error("Error deleting playlist:", err);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -126,7 +132,31 @@ export default function PlaylistsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <Filter />
+          <div className="relative">
+            <Filter onClick={() => setIsFilterOpen(!isFilterOpen)} active={!!selectedVisibility} />
+            {isFilterOpen && (
+              <div className="absolute top-10 left-0 z-20 w-40 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-2">
+                <button 
+                  onClick={() => { setSelectedVisibility(""); setIsFilterOpen(false); setCurrentPage(1); }}
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md ${selectedVisibility === "" ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}
+                >
+                  All Status
+                </button>
+                <button 
+                  onClick={() => { setSelectedVisibility("public"); setIsFilterOpen(false); setCurrentPage(1); }}
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md mt-1 ${selectedVisibility === "public" ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}
+                >
+                  Public
+                </button>
+                <button 
+                  onClick={() => { setSelectedVisibility("private"); setIsFilterOpen(false); setCurrentPage(1); }}
+                  className={`w-full text-left px-3 py-2 text-sm rounded-md mt-1 ${selectedVisibility === "private" ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}
+                >
+                  Private
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <Create text="Playlist" onClick={() => setIsModalOpen(true)} />
       </div>  
@@ -191,7 +221,7 @@ export default function PlaylistsPage() {
                         </button>
                         {userRole === 'super_admin' && (
                         <button
-                          onClick={() => handleDelete(p.playlist_id)}
+                          onClick={() => setDeleteTarget(p)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Delete
@@ -347,6 +377,13 @@ export default function PlaylistsPage() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Playlist?"
+        targetName={deleteTarget?.name}
+      />
     </div>
   );
 }

@@ -3,9 +3,30 @@ const db = require("../db/pool");
 const getAllPlaylists = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
+        const search = req.query.search || '';
+        const visibility = req.query.visibility || ''; // 'public' หรือ 'private'
         const limit = 20;
         const offset = (page - 1) * limit;
 
+        let conditions = [];
+        let queryParams = [];
+
+        // 1. จัดการเงื่อนไข Search (Name หรือ Code)
+        if (search) {
+            queryParams.push(`%${search}%`);
+            conditions.push(`(p.name ILIKE $${queryParams.length} OR p.playlist_code ILIKE $${queryParams.length})`);
+        }
+
+        // 2. จัดการเงื่อนไข Visibility (Public/Private)
+        if (visibility) {
+            const isPublic = visibility === 'public';
+            queryParams.push(isPublic);
+            conditions.push(`p.is_public = $${queryParams.length}`);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : "";
+
+        // Query หลัก: ดึงข้อมูลพร้อมจำนวนเพลง
         const query = `
             SELECT
                 p.playlist_id,
@@ -15,30 +36,41 @@ const getAllPlaylists = async (req, res) => {
                 p.cover_image_url,
                 p.create_at,
                 u.username,
-                COUNT(pi.music_id) AS total_music
+                COUNT(pi.music_id)::INT AS total_music
             FROM playlist p
             LEFT JOIN users u ON p.user_id = u.user_id
             LEFT JOIN playlist_items pi ON p.playlist_id = pi.playlist_id
+            ${whereClause}
             GROUP BY p.playlist_id, u.username
-            ORDER BY p.playlist_id ASC
-            LIMIT $1 OFFSET $2;
+            ORDER BY p.playlist_id DESC
+            LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2};
         `;
-        const countQuery = `SELECT COUNT(*) FROM playlist;`;
+
+        // Query สำหรับนับจำนวนทั้งหมดตามเงื่อนไข
+        const countQuery = `
+            SELECT COUNT(*) 
+            FROM playlist p
+            ${whereClause};
+        `;
 
         const [playlistRes, countRes] = await Promise.all([
-            db.query(query, [limit, offset]),
-            db.query(countQuery)
+            db.query(query, [...queryParams, limit, offset]),
+            db.query(countQuery, queryParams)
         ]);
 
         const totalItems = parseInt(countRes.rows[0].count);
-        const totalPages = Math.ceil(totalItems / limit);
+        const totalPages = Math.ceil(totalItems / limit) || 1;
 
         res.status(200).json({
             data: playlistRes.rows,
-            pagination: { currentPage: page, totalPages, totalItems }
+            pagination: { 
+                currentPage: page, 
+                totalPages, 
+                totalItems 
+            }
         });
     } catch (err) {
-        console.error("Error at getAllPlaylists:", err.message);
+        console.error("🔥 Error at getAllPlaylists:", err.message);
         res.status(500).json({ error: "Server error while fetching playlists" });
     }
 };

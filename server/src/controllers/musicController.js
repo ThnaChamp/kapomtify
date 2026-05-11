@@ -138,9 +138,15 @@ const deleteMusic = async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // 1. ลบข้อมูลในตารางเชื่อมโยง (Relation Tables) ทั้งหมดก่อน
         await client.query('DELETE FROM music_artist WHERE music_id = $1', [id]);
         await client.query('DELETE FROM music_genre WHERE music_id = $1', [id]);
+        
+        // ⚠️ เพิ่มเติม: ถ้ามีตารางเหล่านี้ ต้องลบด้วย!
+        // await client.query('DELETE FROM chart_item WHERE music_id = $1', [id]);
+        // await client.query('DELETE FROM playlist_item WHERE music_id = $1', [id]);
 
+        // 2. ลบที่ตัวตารางหลัก (Music)
         const result = await client.query('DELETE FROM music WHERE music_id = $1', [id]);
 
         if (result.rowCount === 0) {
@@ -152,8 +158,9 @@ const deleteMusic = async (req, res) => {
         res.status(200).json({ message: "ลบเพลงเรียบร้อยเเล้ว"});
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error("🔥 Delete Error:", err.message);
-        res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบเพลง"});
+        // ✅ สำคัญ: ดู Error ใน Console ว่ามันติด Foreign Key ที่ตารางไหน!
+        console.error("🔥 Delete Error Details:", err.message); 
+        res.status(500).json({ error: "ลบไม่ได้เพราะเพลงนี้ถูกใช้งานอยู่ในตารางอื่น"});
     } finally {
         client.release();
     }

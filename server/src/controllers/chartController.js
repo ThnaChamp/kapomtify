@@ -8,6 +8,7 @@ const getAllCharts = async (req, res) => {
         const offset = (page - 1) * limit;
         const searchParam = `%${search}%`;
 
+        // ✅ ปรับปรุง Query: เพิ่มคอลัมน์ใน GROUP BY ให้ครบถ้วนตามมาตรฐาน SQL
         const query = `
             SELECT
                 c.chart_id,
@@ -15,15 +16,25 @@ const getAllCharts = async (req, res) => {
                 c.chart_name,
                 c.description,
                 c.chart_date,
-                COUNT(mc.music_id) AS total_music
+                COUNT(mc.music_id)::INT AS total_music -- Cast เป็น INT เพื่อความชัวร์
             FROM chart c
             LEFT JOIN music_chart mc ON c.chart_id = mc.chart_id
             WHERE c.chart_name ILIKE $1 OR c.chart_code ILIKE $1
-            GROUP BY c.chart_id
+            GROUP BY 
+                c.chart_id, 
+                c.chart_code, 
+                c.chart_name, 
+                c.description, 
+                c.chart_date
             ORDER BY c.chart_id ASC
             LIMIT $2 OFFSET $3;
         `;
-        const countQuery = `SELECT COUNT(*) FROM chart WHERE chart_name ILIKE $1 OR chart_code ILIKE $1;`;
+        
+        const countQuery = `
+            SELECT COUNT(*) 
+            FROM chart 
+            WHERE chart_name ILIKE $1 OR chart_code ILIKE $1;
+        `;
 
         const [chartRes, countRes] = await Promise.all([
             db.query(query, [searchParam, limit, offset]),
@@ -35,10 +46,14 @@ const getAllCharts = async (req, res) => {
 
         res.status(200).json({
             data: chartRes.rows,
-            pagination: { currentPage: page, totalPages, totalItems }
+            pagination: { 
+                currentPage: page, 
+                totalPages, 
+                totalItems 
+            }
         });
     } catch (err) {
-        console.error("Error at getAllCharts:", err.message);
+        console.error("🔥 Error at getAllCharts:", err.message);
         res.status(500).json({ error: "Server error while fetching charts" });
     }
 };

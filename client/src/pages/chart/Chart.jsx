@@ -5,6 +5,7 @@ import Filter from '../../components/filterBtn';
 import Create from '../../components/createBtn';
 import Cancel from '../../components/cancelBtn';
 import CreateM from "../../components/createMBtn";
+import DeleteModal from "../../components/DeleteModal";
 const userRole = localStorage.getItem('userRole');
 export default function ChartPage() {
   const navigate = useNavigate();
@@ -13,6 +14,9 @@ export default function ChartPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     chart_code: '',
@@ -51,7 +55,9 @@ export default function ChartPage() {
   const fetchCharts = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts?page=${currentPage}`);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/charts?page=${currentPage}&search=${searchQuery}`
+      );
       const result = await res.json();
       setCharts(result.data || []);
       setTotalPages(result.pagination?.totalPages || 1);
@@ -64,7 +70,14 @@ export default function ChartPage() {
 
   useEffect(() => {
     fetchCharts();
-  }, [currentPage]);
+  }, [currentPage, searchQuery]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      setSearchQuery(searchTerm);
+      setCurrentPage(1);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -92,34 +105,41 @@ export default function ChartPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Chart นี้?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts/${deleteTarget.chart_id}`, {
         method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // ✅ ส่ง Token
+        }
       });
       if (res.ok) {
         fetchCharts();
-        alert("ลบข้อมูลสำเร็จ");
       } else {
         const err = await res.json();
         alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
       console.error("Error deleting chart:", err);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
   return (
-    <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
-      <div className="px-8 pt-6 flex flex-col gap-5">
+    <div className="flex flex-col gap-5 p-8 text-[#e0e0e0]">
 
         {/* Toolbar */}
         <div className="flex justify-between items-center">
           <div className="flex gap-3 items-center">
-            <SearchBox placeholder="Search charts..." />
-            <Filter />
+            <SearchBox 
+            placeholder="Search charts..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+            
           </div>
           <Create text="Chart" onClick={() => setIsModalOpen(true)} />
         </div>
@@ -160,7 +180,7 @@ export default function ChartPage() {
                         </button>
                         {userRole === 'super_admin' && (
                         <button
-                          onClick={() => handleDelete(c.chart_id)}
+                          onClick={() => setDeleteTarget(c)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Delete
@@ -208,7 +228,6 @@ export default function ChartPage() {
             »
           </button>
         </div>
-      </div>
 
       {/* ── Modal Create ── */}
       {isModalOpen && (
@@ -269,6 +288,13 @@ export default function ChartPage() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Chart?"
+        targetName={deleteTarget?.chart_name}
+      />
     </div>
   );
 }

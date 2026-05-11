@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
+import DeleteModal from "../../components/DeleteModal";
 export default function ArtistDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [artist, setArtist] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(true);
   const userRole = localStorage.getItem('userRole');
@@ -25,19 +26,21 @@ export default function ArtistDetailPage() {
 
   useEffect(() => { fetchArtist(); }, [id]);
 
-  const handleDelete = async () => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบศิลปินท่านนี้?")) return;
+ const handleDelete = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, { 
+        method: 'DELETE'
+      });
       if (res.ok) {
-        alert("ลบข้อมูลศิลปินเรียบร้อยแล้ว");
-        navigate('/artists');
+        navigate('/artist'); 
       } else {
         const errData = await res.json();
         alert(`ลบไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาด'}`);
       }
     } catch(err) {
       alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -57,7 +60,7 @@ export default function ArtistDetailPage() {
       
       {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-xl font-bold mb-2">
-        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/artists")}>Artists</span>
+        <span className="text-[#1DB954] underline decoration-2 underline-offset-4 cursor-pointer" onClick={() => navigate("/artist")}>Artists</span>
         <span className="text-gray-500 mx-1">›</span>
         <span className="text-white">{artist.artist_name}</span>
       </div>
@@ -88,7 +91,7 @@ export default function ArtistDetailPage() {
           <div className="flex gap-4 mt-4">
             <button onClick={() => setIsEditModalOpen(true)} className="px-8 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg font-bold text-sm hover:bg-[#333] transition-all">Edit Profile</button>
             {userRole === 'super_admin' && (
-            <button onClick={handleDelete} className="px-8 py-2 bg-transparent border border-red-500/30 text-red-500 rounded-lg font-bold text-sm hover:bg-red-500/10 transition-all">Remove</button>
+            <button onClick={() => setIsDeleteModalOpen(true)} className="px-8 py-2 bg-transparent border border-red-500/30 text-red-500 rounded-lg font-bold text-sm hover:bg-red-500/10 transition-all">Remove</button>
             )}
             </div>
         </div>
@@ -181,7 +184,7 @@ export default function ArtistDetailPage() {
               <div className="grid grid-cols-2 gap-5">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold text-gray-400 uppercase">Code</label>
-                  <input value={editForm.artist_code || ''} onChange={e => setEditForm({...editForm, artist_code: e.target.value})} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]"/>
+                  <input value={editForm.artist_code || ''} onChange={e => setEditForm({...editForm, artist_code: e.target.value})} readOnly className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] cursor-not-allowed"/>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold text-gray-400 uppercase">Name</label>
@@ -213,6 +216,13 @@ export default function ArtistDetailPage() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Artist?"
+        targetName={artist.artist_name}
+      />
     </div>
   );
 }

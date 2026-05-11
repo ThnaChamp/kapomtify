@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SearchBox from "../../components/searchBox";
 import Filter from "../../components/filterBtn";
 import Create from "../../components/createBtn";
+import DeleteModal from "../../components/DeleteModal";
 
 export default function ArtistPage() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function ArtistPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const userRole = localStorage.getItem('userRole');
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [formData, setFormData] = useState({
     artist_code: "",
     artist_name: "",
@@ -25,14 +27,16 @@ export default function ArtistPage() {
     type: "Solo",
     gender: "Male"
   });
-
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedGender, setSelectedGender] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const ITEMS_PER_PAGE = 20;
 
   const fetchArtists = async () => {
     try {
       setLoading(true);
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/artists?page=${currentPage}&search=${searchQuery}`
+        `${import.meta.env.VITE_API_URL}/api/artists?page=${currentPage}&search=${searchQuery}&type=${selectedType}&gender=${selectedGender}`
       );
       const data = await res.json();
       setArtists(data.data || []);
@@ -49,7 +53,7 @@ export default function ArtistPage() {
         fetchArtists();
     }, 500);
     return () => clearTimeout(delay);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, selectedType, selectedGender]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -91,11 +95,11 @@ export default function ArtistPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบศิลปินท่านนี้?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${deleteTarget.artist_id}`, {
+        method: "DELETE"
       });
       if (res.ok) {
         fetchArtists();
@@ -105,6 +109,8 @@ export default function ArtistPage() {
       }
     } catch (err) {
       console.error("Delete error:", err);
+    } finally {
+      setDeleteTarget(null); // ปิด Modal
     }
   };
 
@@ -119,7 +125,50 @@ export default function ArtistPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <Filter />
+          <div className="relative">
+          
+            <Filter 
+              onClick={() => setIsFilterOpen(!isFilterOpen)} 
+              active={!!selectedType || !!selectedGender} 
+            />
+            {isFilterOpen && (
+              <div className="absolute top-10 left-0 z-20 w-48 bg-[#282828] border border-[#333] rounded-lg shadow-xl p-3 flex flex-col gap-3">
+                {/* ── Section: Artist Type ── */}
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1">Type</p>
+                  <div className="flex flex-col gap-1">
+                    {["", "Solo", "Group", "Band"].map((t) => (
+                      <button 
+                        key={t}
+                        onClick={() => { setSelectedType(t); setCurrentPage(1); }}
+                        className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${selectedType === t ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}
+                      >
+                        {t === "" ? "All Types" : t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-[1px] bg-[#333]" />
+
+                {/* ── Section: Gender ── */}
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1">Gender</p>
+                  <div className="flex flex-col gap-1">
+                    {["", "Male", "Female", "Other"].map((g) => (
+                      <button 
+                        key={g}
+                        onClick={() => { setSelectedGender(g); setCurrentPage(1); }}
+                        className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${selectedGender === g ? "text-[#1DB954] bg-[#1DB954]/10" : "text-gray-300 hover:bg-[#333]"}`}
+                      >
+                        {g === "" ? "All Genders" : g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            </div>
         </div>
         <Create text="Artist" onClick={() => setIsModalOpen(true)} />
       </div>
@@ -177,7 +226,7 @@ export default function ArtistPage() {
                         </button>
                         {userRole === 'super_admin' && (
                         <button
-                          onClick={() => handleDelete(a.artist_id)}
+                          onClick={() => setDeleteTarget(a)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Delete
@@ -351,6 +400,13 @@ export default function ArtistPage() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Artist?"
+        targetName={deleteTarget?.artist_name}
+      />
     </div>
   );
 }

@@ -2,30 +2,57 @@ const db = require("../db/pool");
 
 const getAllArtists = async (req, res) => {
     try {
+        const { search, type, gender } = req.query; 
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
         const offset = (page - 1) * limit;
 
+        let conditions = [];
+        let queryParams = [];
+
+        if (search) {
+            queryParams.push(`%${search}%`);
+            conditions.push(`(artist_name ILIKE $${queryParams.length} OR artist_code ILIKE $${queryParams.length})`);
+        }
+
+        if (type) {
+            queryParams.push(type);
+            conditions.push(`type = $${queryParams.length}`);
+        }
+
+        if (gender) {
+            queryParams.push(gender);
+            conditions.push(`gender = $${queryParams.length}`);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : "";
+
         const query = `
             SELECT artist_id, artist_code, artist_name, profile_image_url, type, gender 
             FROM artist 
+            ${whereClause}
             ORDER BY artist_id ASC 
-            LIMIT $1 OFFSET $2;
+            LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2};
         `;
-        const countQuery = `SELECT COUNT(*) FROM artist;`;
+
+        const countQuery = `SELECT COUNT(*) FROM artist ${whereClause};`;
 
         const [artistRes, countRes] = await Promise.all([
-            db.query(query, [limit, offset]),
-            db.query(countQuery)
+            db.query(query, [...queryParams, limit, offset]),
+            db.query(countQuery, queryParams)
         ]);
         
         const totalItems = parseInt(countRes.rows[0].count);
         res.status(200).json({
             data: artistRes.rows,
-            pagination: { currentPage: page, totalPages: Math.ceil(totalItems / limit), totalItems }
+            pagination: { 
+                currentPage: page, 
+                totalPages: Math.ceil(totalItems / limit) || 1, 
+                totalItems 
+            }
         });
     } catch (err) {
-        console.error(err);
+        console.error("🔥 Error at getAllArtists:", err.message);
         res.status(500).json({ error: "Server error" });
     }
 };

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import DeleteModal from "../../components/DeleteModal";
+import SearchBox from "../../components/searchBox";
 
 /* ── Icons ── */
 const FilterIcon = () => (
@@ -18,6 +20,8 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const userRole = localStorage.getItem('userRole');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const ITEMS_PER_PAGE = 20;
 
   const fetchUsers = async () => {
@@ -33,6 +37,20 @@ export default function UsersPage() {
       console.error("Fetch users error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${deleteTarget.user_id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      fetchUsers(); // Refresh data
+    } catch (error) {
+      console.error("Delete user error:", error);
+      alert("ไม่สามารถลบผู้ใช้ได้");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -55,16 +73,12 @@ export default function UsersPage() {
       {/* ── Toolbar ── */}
       <div className="flex justify-between items-center mt-2">
         <div className="flex gap-3 items-center">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search users..."
-              className="bg-[#242424] border border-[#444] rounded-md py-1.5 px-4 text-sm w-64 focus:outline-none focus:border-[#1DB954]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
+          <SearchBox 
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
           
           <div className="relative">
             <select 
@@ -83,12 +97,9 @@ export default function UsersPage() {
               <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
             </div>
           </div>
-
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-transparent border border-[#444] rounded-md text-sm text-gray-300 hover:border-gray-500 transition-colors">
-            <FilterIcon /> Filter
-          </button>
         </div>
       </div>
+      
 
       {/* ── Users Table Container ── */}
       <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
@@ -152,7 +163,10 @@ export default function UsersPage() {
                           Detail
                         </button>
                         {userRole === 'super_admin' && (
-                        <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">
+                        <button 
+                          onClick={() => setDeleteTarget(user)}
+                          className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
+                        >
                           Delete
                         </button>
                         )}
@@ -209,6 +223,14 @@ export default function UsersPage() {
           »
         </button>
       </div>
+
+      <DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete User?"
+        targetName={deleteTarget?.display_name || deleteTarget?.username}
+      />
     </div>
   );
 }

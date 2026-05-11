@@ -239,6 +239,60 @@ const getUserLibraryPlaylists = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+const deleteUser = async (req, res) => {
+    const { id } = req.params;
+    const client = await db.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // --- ลบตามลำดับ "ลูก/หลาน" ไปหา "พ่อ" ---
+
+        // 1. ประวัติการฟัง
+        await client.query('DELETE FROM listen_history WHERE user_id = $1', [id]);
+
+        // 2. รายละเอียดธุรกรรม (ต้องลบ detail ก่อน sub เพราะ detail ชี้ไปหา sub/trans)
+        await client.query(`
+            DELETE FROM transaction_detail 
+            WHERE transaction_id IN (SELECT transaction_id FROM transactions WHERE user_id = $1)
+        `, [id]);
+
+        // 3. การสมัครสมาชิก
+        await client.query('DELETE FROM user_subscription WHERE user_id = $1', [id]);
+
+        // 4. ธุรกรรมการเงิน
+        await client.query('DELETE FROM transactions WHERE user_id = $1', [id]);
+
+        // 5. ข้อมูลในห้องสมุด (Library)
+        await client.query('DELETE FROM library_albums WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM library_artist WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM library_playlist WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM librarys WHERE user_id = $1', [id]);
+
+        // 6. Playlist (ลบเพลงในเพลย์ลิสต์ก่อน ถ้ามี)
+        // ** ตรวจสอบชื่อตารางให้ดี ถ้าติด error "relation does not exist" ให้คอมเมนต์บรรทัดล่างทิ้ง **
+        // await client.query(`DELETE FROM playlist_songs WHERE playlist_id IN (SELECT playlist_id FROM playlist WHERE user_id = $1)`, [id]);
+        await client.query('DELETE FROM playlist WHERE user_id = $1', [id]);
+
+        // 7. ลบตัว User เป็นลำดับสุดท้าย
+        const result = await client.query('DELETE FROM users WHERE user_id = $1', [id]);
+
+        if (result.rowCount === 0) {
+            throw new Error("ไม่พบผู้ใช้งานที่ต้องการลบ");
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: "ลบผู้ใช้งานสำเร็จ" });
+
+    } catch (err) {
+        // หากมีคำสั่งใดพัง ให้สั่ง ROLLBACK ทันทีเพื่อล้าง Error ใน Transaction Block
+        await client.query('ROLLBACK');
+        console.error("🔥 Error ตัวจริงคือบรรทัดนี้ ->", err.message);
+        res.status(500).json({ error: "ลบไม่ได้: " + err.message });
+    } finally {
+        client.release();
+    }
+};
 module.exports = { 
     getAllUsers,
     getUserDetail,
@@ -247,5 +301,6 @@ module.exports = {
     getUserLibraryAlbums,
     getUserStats,
     getUserSubHistory,
-    getUserLibraryPlaylists
+    getUserLibraryPlaylists,
+    deleteUser
 };

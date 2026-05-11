@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
+import DeleteModal from "../../components/DeleteModal";
 export default function ChartDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [chart, setChart] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteChartOpen, setIsDeleteChartOpen] = useState(false);
+  const [musicToRemove, setMusicToRemove] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [addForm, setAddForm] = useState({ music_id: "", last_rank: "", peak_rank: "" });
   const [allMusic, setAllMusic] = useState([]);
@@ -54,21 +56,19 @@ export default function ChartDetail() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleDelete = async () => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบ Chart นี้?")) return;
+  const handleConfirmDeleteChart = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/charts/${id}`, {
         method: "DELETE",
+        headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.ok) {
-        alert("ลบข้อมูล Chart เรียบร้อยแล้ว");
         navigate("/chart");
-      } else {
-        const err = await res.json();
-        alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
-      alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      console.error(err);
+    } finally {
+      setIsDeleteChartOpen(false);
     }
   };
 
@@ -117,22 +117,23 @@ export default function ChartDetail() {
     }
   };
 
-  const handleRemoveMusic = async (musicId) => {
-    if (!window.confirm("ต้องการลบเพลงนี้ออกจาก Chart?")) return;
+  const handleConfirmRemoveMusic = async () => {
+    if (!musicToRemove) return;
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/charts/${id}/entries/${musicId}`,
-        { method: "DELETE" }
+        `${import.meta.env.VITE_API_URL}/api/charts/${id}/entries/${musicToRemove.music_id}`,
+        { 
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
+        }
       );
       if (res.ok) {
         fetchChart();
-      } else {
-        const err = await res.json();
-        alert(`ลบไม่สำเร็จ: ${err.error}`);
       }
     } catch (err) {
-      console.error("Error removing music:", err);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      console.error(err);
+    } finally {
+      setMusicToRemove(null);
     }
   };
 
@@ -180,7 +181,7 @@ export default function ChartDetail() {
             </button>
             {userRole === 'super_admin' && (
             <button
-              onClick={handleDelete}
+              onClick={() => setIsDeleteChartOpen(true)}
               className="px-6 py-1.5 border border-red-900/50 text-red-500 text-sm font-bold rounded hover:bg-red-500/10"
             >
               Delete
@@ -248,7 +249,7 @@ export default function ChartDetail() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2 justify-end">
                         <button
-                          onClick={() => handleRemoveMusic(e.music_id)}
+                          onClick={() => setMusicToRemove(e)}
                           className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
                         >
                           Remove
@@ -289,7 +290,7 @@ export default function ChartDetail() {
                   <input
                     value={editForm.chart_code}
                     onChange={(e) => setEditForm({ ...editForm, chart_code: e.target.value })}
-                    className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954]"
+                    className="bg-[#333333] border border-gray-500 rounded-lg p-2 text-sm text-white outline-none focus:border-[#1DB954] readOnly cursor-not-allowed"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -412,6 +413,21 @@ export default function ChartDetail() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={isDeleteChartOpen}
+        onClose={() => setIsDeleteChartOpen(false)}
+        onConfirm={handleConfirmDeleteChart}
+        title="Delete Full Chart?"
+        targetName={chart.chart_name}
+      />
+
+      <DeleteModal 
+        isOpen={!!musicToRemove}
+        onClose={() => setMusicToRemove(null)}
+        onConfirm={handleConfirmRemoveMusic}
+        title="Remove Song from Chart?"
+        targetName={musicToRemove?.title}
+      />
     </div>
   );
 }

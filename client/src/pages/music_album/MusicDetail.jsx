@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
+import DeleteModal from "../../components/DeleteModal";
 export default function MusicDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -8,6 +8,7 @@ export default function MusicDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const userRole = localStorage.getItem('userRole');
   const fetchMusicDetail = async () => {
     try {
@@ -28,17 +29,20 @@ export default function MusicDetailPage() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบเพลงนี้?")) return;
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/music/${id}`, {
-        method: "DELETE",
+        method: "DELETE"
       });
       if (res.ok) {
-        alert("ลบข้อมูลสำเร็จ");
         navigate("/music");
+      } else {
+        const errorData = await res.json();
+        alert(`ลบไม่สำเร็จ: ${errorData.error}`);
       }
     } catch (err) {
       console.error("Delete error:", err);
+    } finally {
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -118,7 +122,7 @@ export default function MusicDetailPage() {
               Edit
             </button>
             {userRole === 'super_admin' && (
-              <button onClick={handleDelete} className="px-8 py-2 bg-transparent hover:bg-red-500/10 text-red-500 text-sm font-bold rounded-lg border border-red-500/30 transition-all">
+              <button onClick={() => setIsDeleteModalOpen(true)} className="px-8 py-2 bg-transparent hover:bg-red-500/10 text-red-500 text-sm font-bold rounded-lg border border-red-500/30 transition-all">
               Delete
             </button>
             )}
@@ -224,6 +228,13 @@ export default function MusicDetailPage() {
           </div>
         </div>
       )}
+      <DeleteModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Music?"
+        targetName={data.title}
+      />
     </div>
   );
 }

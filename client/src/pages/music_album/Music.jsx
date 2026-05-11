@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SearchBox from "../../components/searchBox";
 import Filter from "../../components/filterBtn";
 import Create from "../../components/createBtn";
-
+import DeleteModal from "../../components/DeleteModal";
 export default function MusicPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Music");
@@ -30,7 +30,7 @@ export default function MusicPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const ITEMS_PER_PAGE = 20;
 
   const userRole = localStorage.getItem('userRole');
@@ -135,17 +135,27 @@ export default function MusicPage() {
     });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("คุณเเน่ใจหรือไม่ว่าต้องการลบเพลงนี้?")) return;
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/music/${id}`, { method: "DELETE" });
-      if (response.ok) {
-        fetchMusic();
-      }
-    } catch (error) {
-      console.error("Error deleting music:", error);
+  const handleDelete = async () => {
+  if (!deleteTarget) return;
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/music/${deleteTarget.music_id}`, { 
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      fetchMusic();
+    } else {
+      const errorData = await response.json();
+      alert(`ลบไม่สำเร็จ: ${errorData.error}`);
     }
-  };
+  } catch (error) {
+    console.error("Error deleting music:", error);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+  } finally {
+    setDeleteTarget(null); 
+  }
+};
 
   return (
     <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
@@ -216,7 +226,7 @@ export default function MusicPage() {
                         <div className="flex gap-2 justify-end">
                           <button onClick={() => navigate(`/music/${m.music_id}`)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-gray-300 hover:bg-[#333]">Detail</button>
                           {userRole === 'super_admin' && (
-                            <button onClick={() => handleDelete(m.music_id)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">Delete</button>
+                            <button onClick={() => setDeleteTarget(m)} className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">Delete</button>
                           )}
                         </div>
                       </td>
@@ -348,6 +358,13 @@ export default function MusicPage() {
     </div>
   </div>
 )}
+<DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Music?"
+        targetName={deleteTarget?.title}
+      />
     </div>
   );
 }
