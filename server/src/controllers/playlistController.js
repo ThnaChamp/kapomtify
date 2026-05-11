@@ -160,7 +160,7 @@ const createPlaylist = async (req, res) => {
         const newPlaylistId = result.rows[0].playlist_id;
 
         // 3. ✅ สร้าง Code อัตโนมัติ (เช่น PL-1, PL-2)
-        const generatedCode = `PL-${newPlaylistId}`;
+        const generatedCode = `PL0${newPlaylistId}`;
 
         // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
         const updateQuery = `UPDATE playlist SET playlist_code = $1 WHERE playlist_id = $2`;

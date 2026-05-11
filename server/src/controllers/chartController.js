@@ -131,7 +131,7 @@ const createChart = async (req, res) => {
         const newChartId = result.rows[0].chart_id;
 
         // 3. ✅ สร้าง Code อัตโนมัติ (เช่น CHR-1, CHR-2)
-        const generatedCode = `CHR-${newChartId}`;
+        const generatedCode = `CH0${newChartId}`;
 
         // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
         const updateQuery = `UPDATE chart SET chart_code = $1 WHERE chart_id = $2`;

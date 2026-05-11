@@ -1,38 +1,77 @@
 const db = require("../db/pool");
-
 const getOverviewStats = async (req, res) => {
     const { month, year } = req.query;
-    const values = [];
     
-    // Logic: ต้องระบุทั้งคู่ และทั้งคู่ต้องไม่ใช่ '0' ถึงจะกรองข้อมูล
+    // ตรวจสอบสถานะการ Filter
     const isFiltered = month && year && month !== '0' && year !== '0';
 
-    const getTimeFilter = (dateColumn) => {
-        if (isFiltered) {
-            return `WHERE EXTRACT(MONTH FROM ${dateColumn}) = $1 AND EXTRACT(YEAR FROM ${dateColumn}) = $2`;
-        }
-        return "";
-    };
-
-    if (isFiltered) {
-        values.push(parseInt(month), parseInt(year));
-    }
-
     try {
-        const query = `
-            SELECT 
-                (SELECT COUNT(*) FROM listen_history ${getTimeFilter('played_at')}) AS total_streams,
-                (SELECT COUNT(*) FROM users ${getTimeFilter('created_at')}) AS active_users, 
-                (SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) FROM reviews ${getTimeFilter('create_at')}) AS avg_rating,
-                (SELECT COUNT(*) FROM library_albums ${getTimeFilter('added_at')}) AS total_saves
-        `;
-        const result = await db.query(query, values);
-        res.status(200).json(result.rows[0]);
+        let query = "";
+        
+        if (!isFiltered) {
+            // ✅ กรณีที่ 1: ดึงข้อมูลรวมทั้งหมด (All Time)
+            query = `
+                SELECT 
+                    (SELECT COUNT(*) FROM listen_history) AS total_streams,
+                    (SELECT COUNT(*) FROM users) AS active_users, 
+                    (SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) FROM reviews) AS avg_rating,
+                    (SELECT COUNT(*) FROM library_albums) AS total_saves,
+                    '0.0' AS streams_change, '0.0' AS users_change, '0.0' AS rating_change, '0.0' AS saves_change
+            `;
+        } else {
+            // ✅ กรณีที่ 2: ดึงตามเดือนที่เลือก และคำนวณเปรียบเทียบเดือนก่อนหน้า
+            const m = parseInt(month);
+            const y = parseInt(year);
+            
+            // คำนวณหาเดือนก่อนหน้า
+            let pm = m - 1;
+            let py = y;
+            if (pm === 0) { pm = 12; py = y - 1; }
+
+            query = `
+                WITH curr AS (
+                    SELECT 
+                        (SELECT COUNT(*) FROM listen_history WHERE EXTRACT(MONTH FROM played_at) = ${m} AND EXTRACT(YEAR FROM played_at) = ${y}) AS s,
+                        (SELECT COUNT(*) FROM users WHERE EXTRACT(MONTH FROM created_at) = ${m} AND EXTRACT(YEAR FROM created_at) = ${y}) AS u,
+                        (SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) FROM reviews WHERE EXTRACT(MONTH FROM create_at) = ${m} AND EXTRACT(YEAR FROM create_at) = ${y}) AS r,
+                        (SELECT COUNT(*) FROM library_albums WHERE EXTRACT(MONTH FROM added_at) = ${m} AND EXTRACT(YEAR FROM added_at) = ${y}) AS v
+                ),
+                prev AS (
+                    SELECT 
+                        (SELECT COUNT(*) FROM listen_history WHERE EXTRACT(MONTH FROM played_at) = ${pm} AND EXTRACT(YEAR FROM played_at) = ${py}) AS s,
+                        (SELECT COUNT(*) FROM users WHERE EXTRACT(MONTH FROM created_at) = ${pm} AND EXTRACT(YEAR FROM created_at) = ${py}) AS u,
+                        (SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) FROM reviews WHERE EXTRACT(MONTH FROM create_at) = ${pm} AND EXTRACT(YEAR FROM create_at) = ${py}) AS r,
+                        (SELECT COUNT(*) FROM library_albums WHERE EXTRACT(MONTH FROM added_at) = ${pm} AND EXTRACT(YEAR FROM added_at) = ${py}) AS v
+                )
+                SELECT 
+                    curr.s AS total_streams, curr.u AS active_users, curr.r AS avg_rating, curr.v AS total_saves,
+                    COALESCE(ROUND(((curr.s - prev.s)::numeric / NULLIF(prev.s, 0)) * 100, 1), 0.0) AS streams_change,
+                    COALESCE(ROUND(((curr.u - prev.u)::numeric / NULLIF(prev.u, 0)) * 100, 1), 0.0) AS users_change,
+                    COALESCE(ROUND(((curr.r - prev.r)::numeric / NULLIF(prev.r, 0)) * 100, 1), 0.0) AS rating_change,
+                    COALESCE(ROUND(((curr.v - prev.v)::numeric / NULLIF(prev.v, 0)) * 100, 1), 0.0) AS saves_change
+                FROM curr, prev
+            `;
+        }
+
+        const result = await db.query(query);
+        const stats = result.rows[0];
+
+        res.status(200).json({
+            total_streams: parseInt(stats.total_streams) || 0,
+            active_users: parseInt(stats.active_users) || 0,
+            avg_rating: parseFloat(stats.avg_rating || 0).toFixed(1),
+            total_saves: parseInt(stats.total_saves) || 0,
+            streams_change: String(stats.streams_change || "0.0"),
+            users_change: String(stats.users_change || "0.0"),
+            rating_change: String(stats.rating_change || "0.0"),
+            saves_change: String(stats.saves_change || "0.0")
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("🔥 Analytics Error:", err.message);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 };
-
 const getUserCountryStats = async (req, res) => {
     const { month, year } = req.query;
     const values = [];

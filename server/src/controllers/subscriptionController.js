@@ -61,7 +61,7 @@ const createSubscription = async (req, res) => {
         const newPlanId = result.rows[0].plan_id;
 
         // 3. ✅ สร้าง Code อัตโนมัติ (เช่น SUB-1, SUB-2)
-        const generatedCode = `SUB-${newPlanId}`;
+        const generatedCode = `P00${newPlanId}`;
 
         // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
         const updateQuery = `UPDATE subscription_plan SET plan_code = $1 WHERE plan_id = $2`;

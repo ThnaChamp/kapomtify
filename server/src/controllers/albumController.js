@@ -120,7 +120,7 @@ const createAlbum = async (req, res) => {
         const newAlbumId = result.rows[0].album_id;
 
         // ✅ สร้าง Code จาก ID ที่เพิ่งได้มา
-        const generatedCode = `ALB-${newAlbumId}`;
+        const generatedCode = `AB0${newAlbumId}`;
 
         // ✅ Update กลับไปที่ตาราง
         await client.query(

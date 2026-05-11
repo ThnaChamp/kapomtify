@@ -667,10 +667,10 @@ const handleTempFilterChange = (e) => {
       {/* Stats Grid */}
       <div className="grid grid-cols-4 gap-6 mb-8">
         {[
-          { label: "total streams", value: formatNumber(stats?.total_streams), icon: <Icons.Play />, color: "text-[#1DB954]" },
-          { label: "active users",  value: formatNumber(stats?.active_users),  icon: <Icons.Users />, color: "text-[#1DB954]" },
-          { label: "avg.rating",    value: stats?.avg_rating || "0.0",          icon: <Icons.Star />, color: "text-white" },
-          { label: "total saves",   value: formatNumber(stats?.total_saves),   icon: <Icons.Heart />, color: "text-[#1DB954]" },
+         { label: "total streams", value: formatNumber(stats?.total_streams), icon: <Icons.Play />, change: stats?.streams_change },
+        { label: "active users",  value: formatNumber(stats?.active_users),  icon: <Icons.Users />, change: stats?.users_change },
+        { label: "avg.rating",    value: stats?.avg_rating || "0.0",          icon: <Icons.Star />,  change: stats?.rating_change },
+        { label: "total saves",   value: formatNumber(stats?.total_saves),   icon: <Icons.Heart />, change: stats?.saves_change },
         ].map((stat, i) => (
           <div key={i} className="bg-[#1e1e1e] p-6 rounded-2xl border border-white/5 shadow-xl hover:bg-[#252525] transition-colors">
             <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4">
@@ -679,7 +679,9 @@ const handleTempFilterChange = (e) => {
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
             <div className="flex justify-between items-end">
               <h2 className="text-3xl font-bold text-white">{stat.value}</h2>
-              <span className={`text-xs font-bold ${stat.color}`}>+0.0%</span>
+              <span className={`text-xs font-bold ${Number(stat.change) >= 0 ? "text-[#1DB954]" : "text-red-500"}`}>
+                {stat.change ? (Number(stat.change) >= 0 ? `+${stat.change}%` : `${stat.change}%`) : "+0.0%"}
+              </span>
             </div>
           </div>
         ))}

@@ -133,7 +133,7 @@ const createArtist = async (req, res) => {
         const newArtistId = result.rows[0].artist_id;
 
         // 4. ✅ สร้าง Code จาก ID (เช่น ART-12)
-        const generatedCode = `ART-${newArtistId}`;
+        const generatedCode = `A0${newArtistId}`;
 
         // 5. UPDATE รหัสกลับเข้าไปที่แถวเดิม
         await client.query(

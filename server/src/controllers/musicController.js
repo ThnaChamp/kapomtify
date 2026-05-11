@@ -100,7 +100,7 @@ const createMusic = async (req, res) => {
         const newMusicId = musicRes.rows[0].music_id;
 
         
-        const generatedCode = `MUS-${newMusicId}`;
+        const generatedCode = `M0${newMusicId}`;
 
         // 3. UPDATE กลับไปที่แถวเดิมเพื่อใส่ music_code
         const updateCodeQuery = `UPDATE music SET music_code = $1 WHERE music_id = $2`;
@@ -176,8 +176,9 @@ const getMusicDetail = async (req, res) => {
                 m.release_date, 
                 m.duration,
                 m.track_number,
-                m.file_url,           -- ✅ 1. เพิ่มตัวนี้เข้าไป
-                m.is_explicit,        -- ✅ (แนะนำ) เพิ่มตัวนี้ด้วยถ้าต้องใช้ในหน้า Edit
+                m.file_url,
+                m.play_count,         -- ✅ เพิ่มบรรทัดนี้เพื่อดึงยอดวิว
+                m.is_explicit,
                 al.album_name,
                 al.cover_image_url,
                 string_agg(DISTINCT a.artist_name, ', ') AS artist_names,
@@ -189,7 +190,7 @@ const getMusicDetail = async (req, res) => {
             LEFT JOIN music_genre mg ON m.music_id = mg.music_id
             LEFT JOIN genre g ON mg.genre_id = g.genre_id
             WHERE m.music_id = $1
-            GROUP BY m.music_id, al.album_id; -- ✅ ใน Postgres บางเวอร์ชันอาจต้องใส่ m.file_url ใน GROUP BY ด้วยถ้าไม่ได้ใช้ Aggregate function
+            GROUP BY m.music_id, al.album_id, al.album_name, al.cover_image_url; -- ✅ ใส่ให้ครบตามมาตรฐาน Postgres
         `;
 
         const result = await db.query(query, [id]);
