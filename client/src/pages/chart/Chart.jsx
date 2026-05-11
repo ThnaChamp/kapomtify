@@ -225,10 +225,8 @@ export default function ChartPage() {
                 <input
                   name="chart_code"
                   value={formData.chart_code}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
-                  placeholder="C-XXX"
-                  required
+                  className="bg-[#222] border border-[#444] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm readOlny cursor-not-allowed pointer-events-none"
+                  placeholder="Auto-generating..."
                 />
               </div>
               <div className="flex flex-col gap-2">

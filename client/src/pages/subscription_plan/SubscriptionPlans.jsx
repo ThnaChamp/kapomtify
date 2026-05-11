@@ -212,10 +212,8 @@ export default function SubscriptionPlans() {
                 <input 
                   name="plan_code" 
                   value={formData.plan_code} 
-                  onChange={handleChange} 
-                  className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-white focus:border-[#1DB954] outline-none text-sm" 
-                  placeholder="SUB-PREMIUM" 
-                  required 
+                  className="bg-[#222] border border-[#444] rounded-md p-2 text-white focus:border-[#1DB954] outline-none text-sm readOnly cursor-not-allowed pointer-events-none" 
+                  placeholder="Auto-generating..." 
                 />
               </div>
               <div className="flex flex-col gap-2">

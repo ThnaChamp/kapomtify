@@ -32,27 +32,55 @@ const getAllSubscriptions = async (req, res) => {
  * POST /api/subscriptions
  */
 const createSubscription = async (req, res) => {
-    const { plan_code, plan_name, price, duration_day, description } = req.body;
+    // 1. ดึง Client ออกมาเพื่อทำ Transaction
+    const client = await db.connect();
     
-    // ตรวจสอบข้อมูลเบื้องต้น
+    const { plan_name, price, duration_day, description } = req.body;
+    
+    // ตรวจสอบข้อมูลเบื้องต้น (ไม่ต้องเช็ค plan_code เพราะเราจะเจนเอง)
     if (!plan_name || price === undefined || !duration_day) {
         return res.status(400).json({ error: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ชื่อแผน, ราคา, ระยะเวลา)" });
     }
 
     try {
-        const query = `
-            INSERT INTO subscription_plan (plan_code, plan_name, price, duration_day, description)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *;
+        await client.query('BEGIN'); // เริ่มต้น Transaction
+
+        // 2. INSERT ข้อมูลแผนสมาชิก (เว้น plan_code ไว้ก่อน)
+        const insertQuery = `
+            INSERT INTO subscription_plan (plan_name, price, duration_day, description)
+            VALUES ($1, $2, $3, $4)
+            RETURNING plan_id;
         `;
-        const result = await db.query(query, [plan_code, plan_name, price, duration_day, description]);
+        const result = await client.query(insertQuery, [
+            plan_name, 
+            price, 
+            duration_day, 
+            description || null
+        ]);
+
+        const newPlanId = result.rows[0].plan_id;
+
+        // 3. ✅ สร้าง Code อัตโนมัติ (เช่น SUB-1, SUB-2)
+        const generatedCode = `SUB-${newPlanId}`;
+
+        // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
+        const updateQuery = `UPDATE subscription_plan SET plan_code = $1 WHERE plan_id = $2`;
+        await client.query(updateQuery, [generatedCode, newPlanId]);
+
+        await client.query('COMMIT'); // ยืนยันการบันทึกข้อมูล
+
         res.status(201).json({ 
             message: "สร้างแผนสมาชิกสำเร็จ!", 
-            data: result.rows[0] 
+            plan_code: generatedCode,
+            data: { ...result.rows[0], plan_code: generatedCode }
         });
+
     } catch (err) {
+        await client.query('ROLLBACK'); // ยกเลิกหากเกิดข้อผิดพลาด
         console.error("Error at createSubscription:", err.message);
-        res.status(500).json({ error: "ไม่สามารถสร้างแผนสมาชิกได้" });
+        res.status(500).json({ error: "ไม่สามารถสร้างแผนสมาชิกได้: " + err.message });
+    } finally {
+        client.release(); // คืน Connection
     }
 };
 

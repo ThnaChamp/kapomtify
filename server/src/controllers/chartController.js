@@ -87,21 +87,56 @@ const getChartById = async (req, res) => {
 };
 
 const createChart = async (req, res) => {
-    const { chart_code, chart_name, description, chart_date } = req.body;
+    // 1. เชื่อมต่อ Client สำหรับทำ Transaction
+    const client = await db.connect();
+
+    // รับข้อมูลโดยไม่ต้องสนใจ chart_code จากหน้าบ้าน
+    const { chart_name, description, chart_date } = req.body;
+
     try {
-        const query = `
-            INSERT INTO chart (chart_code, chart_name, description, chart_date)
-            VALUES ($1, $2, $3, $4)
+        // ตรวจสอบข้อมูลเบื้องต้น
+        if (!chart_name || !chart_date) {
+            return res.status(400).json({ error: "กรุณากรอกชื่อ Chart และวันที่ให้ครบถ้วน" });
+        }
+
+        await client.query('BEGIN'); // เริ่มต้น Transaction
+
+        // 2. INSERT ข้อมูล Chart (เว้น chart_code ไว้เป็น NULL ก่อน)
+        const insertQuery = `
+            INSERT INTO chart (chart_name, description, chart_date)
+            VALUES ($1, $2, $3)
             RETURNING chart_id;
         `;
-        await db.query(query, [chart_code || null, chart_name, description || null, chart_date || null]);
-        res.status(201).json({ message: "สร้าง Chart เรียบร้อยแล้ว!" });
+        const result = await client.query(insertQuery, [
+            chart_name, 
+            description || null, 
+            chart_date || null
+        ]);
+
+        const newChartId = result.rows[0].chart_id;
+
+        // 3. ✅ สร้าง Code อัตโนมัติ (เช่น CHR-1, CHR-2)
+        const generatedCode = `CHR-${newChartId}`;
+
+        // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
+        const updateQuery = `UPDATE chart SET chart_code = $1 WHERE chart_id = $2`;
+        await client.query(updateQuery, [generatedCode, newChartId]);
+
+        await client.query('COMMIT'); // ยืนยันการบันทึกข้อมูลทั้งหมด
+
+        res.status(201).json({ 
+            message: "สร้าง Chart เรียบร้อยแล้ว!", 
+            chart_code: generatedCode 
+        });
+
     } catch (err) {
+        await client.query('ROLLBACK'); // ถ้าพังให้ยกเลิกสิ่งที่ทำมาทั้งหมด
         console.error("Error at createChart:", err.message);
-        res.status(500).json({ error: "Failed to create chart" });
+        res.status(500).json({ error: "Failed to create chart: " + err.message });
+    } finally {
+        client.release(); // คืน Connection ให้กับ Pool
     }
 };
-
 const updateChart = async (req, res) => {
     const { id } = req.params;
     const { chart_code, chart_name, description, chart_date } = req.body;

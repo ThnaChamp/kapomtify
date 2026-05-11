@@ -74,10 +74,11 @@ const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` 
 };
 
 const createMusic = async (req, res) => {
+    console.log("Request Body:", req.body);
     const client = await db.connect();
 
     const { 
-        music_code, title, release_date, duration, 
+        title, release_date, duration, 
         track_number, file_url, album_id, is_explicit,
         artist_id, 
         genres  
@@ -85,19 +86,31 @@ const createMusic = async (req, res) => {
 
     try {
         await client.query('BEGIN');
+
+        // 1. INSERT เพลงโดย "เว้น" music_code ไว้ก่อน (หรือให้เป็น NULL)
         const musicQuery = `
-            INSERT INTO music (album_id, music_code, title, release_date, duration, track_number, file_url, is_explicit)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO music (album_id, title, release_date, duration, track_number, file_url, is_explicit)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING music_id;
         `;
-        const musicRes = await db.query(musicQuery, [
-            album_id, music_code, title, release_date, duration, track_number, file_url, is_explicit
+        const musicRes = await client.query(musicQuery, [
+            album_id, title, release_date, duration, track_number, file_url, is_explicit
         ]);
-        const newMusicId = musicRes.rows[0].music_id;
         
+        const newMusicId = musicRes.rows[0].music_id;
+
+        
+        const generatedCode = `MUS-${newMusicId}`;
+
+        // 3. UPDATE กลับไปที่แถวเดิมเพื่อใส่ music_code
+        const updateCodeQuery = `UPDATE music SET music_code = $1 WHERE music_id = $2`;
+        await client.query(updateCodeQuery, [generatedCode, newMusicId]);
+
+        // 4. INSERT ความสัมพันธ์ศิลปิน
         const artistQuery = `INSERT INTO music_artist (music_id, artist_id, role) VALUES ($1, $2, $3);`;
         await client.query(artistQuery, [newMusicId, artist_id, 'Main Artist']);
-        const genreQuery = `INSERT INTO music_genre (music_id, genre_id) VALUES ($1, $2);`;
+
+        // 5. INSERT ประเภทเพลง (Genres)
         if (genres && genres.length > 0) {
             const genreQuery = `INSERT INTO music_genre (music_id, genre_id) VALUES ($1, $2);`;
             for (const g_id of genres) {
@@ -105,18 +118,20 @@ const createMusic = async (req, res) => {
             }
         }
 
-        // ถ้าทุกอย่างผ่านหมด ให้บันทึกลง DB จริง
         await client.query('COMMIT');
-        res.status(201).json({ message: "เพิ่มเพลงเรียบร้อยแล้ว!" });
-    } catch (err){
+        res.status(201).json({ 
+            message: "เพิ่มเพลงเรียบร้อยแล้ว!", 
+            music_code: generatedCode 
+        });
+
+    } catch (err) {
         await client.query('ROLLBACK');
-        console.error(err.message);
-        res.status(500).json({ error: "Failed to create music"});
+        console.error("Database Error:", err.message);
+        res.status(500).json({ error: "Failed to create music" });
     } finally {
         client.release();
     }
 };
-
 const deleteMusic = async (req, res) => {
     const { id } = req.params;
     const client = await db.connect();
@@ -144,7 +159,7 @@ const deleteMusic = async (req, res) => {
     }
 };
 const getMusicDetail = async (req, res) => {
-    const { id } = req.params; // รับ ID จาก URL
+    const { id } = req.params; 
     try {
         const query = `
             SELECT 
@@ -154,19 +169,20 @@ const getMusicDetail = async (req, res) => {
                 m.release_date, 
                 m.duration,
                 m.track_number,
+                m.file_url,           -- ✅ 1. เพิ่มตัวนี้เข้าไป
+                m.is_explicit,        -- ✅ (แนะนำ) เพิ่มตัวนี้ด้วยถ้าต้องใช้ในหน้า Edit
                 al.album_name,
                 al.cover_image_url,
                 string_agg(DISTINCT a.artist_name, ', ') AS artist_names,
                 string_agg(DISTINCT g.genre_name, ', ') AS genre_names
             FROM music m
-            -- ⚠️ เช็คการ JOIN: ชื่อตารางและ Foreign Key ต้องถูกต้อง
             LEFT JOIN album al ON m.album_id = al.album_id
             LEFT JOIN music_artist ma ON m.music_id = ma.music_id
             LEFT JOIN artist a ON ma.artist_id = a.artist_id
             LEFT JOIN music_genre mg ON m.music_id = mg.music_id
             LEFT JOIN genre g ON mg.genre_id = g.genre_id
             WHERE m.music_id = $1
-            GROUP BY m.music_id, al.album_id;
+            GROUP BY m.music_id, al.album_id; -- ✅ ใน Postgres บางเวอร์ชันอาจต้องใส่ m.file_url ใน GROUP BY ด้วยถ้าไม่ได้ใช้ Aggregate function
         `;
 
         const result = await db.query(query, [id]);
@@ -175,7 +191,6 @@ const getMusicDetail = async (req, res) => {
             return res.status(404).json({ error: "ไม่พบข้อมูลเพลงนี้" });
         }
 
-        // ✅ ส่งข้อมูลกลับไปเป็น Object ตัวเดียว (ไม่ต้องส่งเป็น Array)
         res.status(200).json(result.rows[0]); 
 
     } catch (err) {

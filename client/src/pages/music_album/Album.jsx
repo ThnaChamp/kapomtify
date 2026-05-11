@@ -245,10 +245,10 @@ export default function AlbumPage() {
                   <input 
                     name="album_code" 
                     value={formData.album_code} 
-                    onChange={handleChange} 
-                    className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954]" 
-                    placeholder="ALB-XXX" 
-                    required 
+                    readOnly 
+                    className="bg-[#222] border border-[#444] rounded-md p-2 text-sm text-white outline-none focus:border-[#1DB954] cursor-not-allowed pointer-events-none" 
+                    placeholder="Auto-generating..." 
+                    
                   />
                 </div>
                 <div className="flex flex-col gap-2">

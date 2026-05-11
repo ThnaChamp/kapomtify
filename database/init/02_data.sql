@@ -217,7 +217,20 @@ INSERT INTO users (user_id, user_code, username, country, email, password_hash, 
 (18, 'USR-018', 'rose_h',   'Thailand',      'rose@example.com',    'hash990011', 'Rose H.',   'https://img.example.com/user/18.jpg', 'Female', 'user','2023-06-15 15:00:00'),
 (19, 'USR-019', 'sam_i',    'United States', 'sam@example.com',     'hash101112', 'Sam I.',    'https://img.example.com/user/19.jpg', 'Male',  'user', '2023-07-20 16:30:00'),
 (20, 'USR-020', 'tina_j',   'Japan',         'tina@example.com',    'hash121314', 'Tina J.',   'https://img.example.com/user/20.jpg', 'Female', 'user','2023-08-25 17:00:00'),
-(21, 'ADM-001', 'admin_kapom',   'Japan',         'admin@kapomtify.com',    'admin1234', 'Ti J.',   'https://img.example.com/user/21.jpg', 'Female', 'admin','2023-08-25 17:00:00');
+(21, 'ADM-001', 'admin_kapom',   'Japan',         'admin@kapomtify.com',    'admin1234', 'Ti J.',   'https://img.example.com/user/21.jpg', 'Female', 'admin','2023-08-25 17:00:00'),
+(
+    22, 
+    'SUP-001', 
+    'super_kapom', 
+    'Thailand', 
+    'superadmin@kapomtify.com', 
+    'super1234', 
+    'Master Kapom', 
+    'https://img.example.com/user/22.jpg', 
+    'Male', 
+    'super_admin', 
+    '2024-05-10 10:00:00'
+);
 -- =============================================
 -- 9. transactions (20 rows)
 -- FIX: ลบ total_amount ออก (ไม่มีใน DDL ใหม่)

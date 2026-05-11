@@ -241,58 +241,113 @@ export default function MusicPage() {
       </div>
 
       {/* ── Modal Create ── */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Music</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Code</label>
-                <input name="music_code" value={formData.music_code} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Title</label>
-                <input name="title" value={formData.title} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Duration (sec)</label>
-                <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Release date</label>
-                <input type="date" name="release_date" value={formData.release_date} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none invert-[0.8] brightness-[0.8]" required />
-              </div>
-              <div className="col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">File URL</label>
-                <input name="file_url" value={formData.file_url} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" placeholder="https://..." />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Album</label>
-                <select name="album_id" value={formData.album_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
-                  <option value="">Select Album</option>
-                  {albums.map((alb) => (<option key={alb.album_id} value={alb.album_id}>{alb.album_name}</option>))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Artist</label>
-                <select name="artist_id" value={formData.artist_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
-                  <option value="">Select Artist</option>
-                  {artists.map((art) => (<option key={art.artist_id} value={art.artist_id}>{art.artist_name}</option>))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/5 col-span-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors">Cancel</button>
-                <button type="submit" className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95">Create Music</button>
-              </div>
-            </form>
+      {/* ── Modal Create ── */}
+{isModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="bg-[#282828] p-8 rounded-xl border border-[#333] w-full max-w-2xl shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-white uppercase tracking-tight">Create New Music</h2>
+        <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
+        {/* Music Code */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Code</label>
+          <input name="music_code" value={formData.music_code} readOnly className="bg-[#222] border border-[#444] rounded-md p-2 text-sm text-gray-500 outline-none cursor-not-allowed pointer-events-none" placeholder="Auto-generating..."/>
+        </div>
+
+        {/* Title */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Title</label>
+          <input name="title" value={formData.title} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
+        </div>
+
+        {/* Duration */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Duration (sec)</label>
+          <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" required />
+        </div>
+
+        {/* Release Date */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Release date</label>
+          <input type="date" name="release_date" value={formData.release_date} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none invert-[0.8] brightness-[0.8]" required />
+        </div>
+
+        {/* Album Select */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Album</label>
+          <select name="album_id" value={formData.album_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
+            <option value="">Select Album</option>
+            {albums.map((alb) => (<option key={alb.album_id} value={alb.album_id}>{alb.album_name}</option>))}
+          </select>
+        </div>
+
+        {/* Artist Select */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Artist</label>
+          <select name="artist_id" value={formData.artist_id} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none cursor-pointer" required>
+            <option value="">Select Artist</option>
+            {artists.map((art) => (<option key={art.artist_id} value={art.artist_id}>{art.artist_name}</option>))}
+          </select>
+        </div>
+
+        {/* ✅ เพิ่มส่วน Genre (ปุ่มกดเลือกหลายอัน) */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Genre</label>
+          <div className="flex flex-wrap gap-2 bg-[#222] p-3 rounded-md border border-[#444]">
+            {allGenres.map((g) => {
+              const isSelected = formData.genres.includes(g.genre_id);
+              return (
+                <button
+                  key={g.genre_id}
+                  type="button"
+                  onClick={() => handleGenreToggle(g.genre_id)}
+                  className={`px-4 py-1 rounded-full border text-[11px] font-bold transition-all ${
+                    isSelected
+                      ? "bg-[#1DB954] border-[#1DB954] text-black"
+                      : "border-[#555] text-white hover:border-white"
+                  }`}
+                >
+                  {g.genre_name}
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+
+        {/* ✅ เพิ่มส่วน Explicit */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">Explicit Content</label>
+          <select 
+            name="is_explicit" 
+            value={formData.is_explicit} 
+            onChange={(e) => setFormData(prev => ({ ...prev, is_explicit: e.target.value === 'true' }))} 
+            className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none"
+          >
+            <option value={false}>No</option>
+            <option value={true}>Yes (Explicit)</option>
+          </select>
+        </div>
+
+        {/* File URL */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-gray-400 uppercase">File URL</label>
+          <input name="file_url" value={formData.file_url} onChange={handleChange} className="bg-[#3e3e3e] border border-[#555] rounded-md p-2 text-sm text-white focus:border-[#1DB954] outline-none" placeholder="https://..." />
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-white/5 col-span-2">
+          <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-400 font-bold hover:text-white transition-colors">Cancel</button>
+          <button type="submit" className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold px-8 py-2 rounded-md transition-all active:scale-95">Create Music</button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }

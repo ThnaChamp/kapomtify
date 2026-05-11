@@ -13,6 +13,7 @@
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.14.0",
+    "pdfkit": "^0.18.0",
     "react-helmet": "^6.1.0",
     "rechart": "^0.0.1"
   }

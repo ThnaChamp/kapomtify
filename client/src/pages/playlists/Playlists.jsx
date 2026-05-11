@@ -267,10 +267,8 @@ export default function PlaylistsPage() {
                 <input
                   name="playlist_code"
                   value={formData.playlist_code}
-                  onChange={handleChange}
-                  className="bg-[#3e3e3e] border border-[#555] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm"
-                  placeholder="PL-XXX"
-                  required
+                  className="bg-[#222] border border-[#444] focus:border-[#1DB954] rounded-md p-2 outline-none text-white text-sm readOnly cursor-not-allowed pointer-events-none"
+                  placeholder="Auto-generating..."
                 />
               </div>
               <div className="flex flex-col gap-2">

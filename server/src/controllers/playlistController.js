@@ -98,18 +98,55 @@ const getPlaylistDetail = async (req, res) => {
 };
 
 const createPlaylist = async (req, res) => {
-    const { playlist_code, name, description, is_public, cover_image_url, user_id } = req.body;
+    // 1. ดึง Client ออกมาเพื่อทำ Transaction
+    const client = await db.connect();
+    
+    const { user_id, name, description, is_public, cover_image_url } = req.body;
+
     try {
-        const query = `
-            INSERT INTO playlist (user_id, playlist_code, name, description, is_public, cover_image_url)
-            VALUES ($1, $2, $3, $4, $5, $6)
+        // ตรวจสอบข้อมูลเบื้องต้น
+        if (!name || !user_id) {
+            return res.status(400).json({ error: "กรุณาระบุชื่อ Playlist และ User ID" });
+        }
+
+        await client.query('BEGIN'); // เริ่มต้น Transaction
+
+        // 2. INSERT ข้อมูล Playlist (เว้น playlist_code ไว้ก่อน)
+        const insertQuery = `
+            INSERT INTO playlist (user_id, name, description, is_public, cover_image_url)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING playlist_id;
         `;
-        await db.query(query, [user_id, playlist_code, name, description || null, is_public, cover_image_url || null]);
-        res.status(201).json({ message: "สร้าง Playlist เรียบร้อยแล้ว!" });
+        const result = await client.query(insertQuery, [
+            user_id, 
+            name, 
+            description || null, 
+            is_public !== undefined ? is_public : true, 
+            cover_image_url || null
+        ]);
+
+        const newPlaylistId = result.rows[0].playlist_id;
+
+        // 3. ✅ สร้าง Code อัตโนมัติ (เช่น PL-1, PL-2)
+        const generatedCode = `PL-${newPlaylistId}`;
+
+        // 4. UPDATE รหัสกลับเข้าไปที่แถวเดิม
+        const updateQuery = `UPDATE playlist SET playlist_code = $1 WHERE playlist_id = $2`;
+        await client.query(updateQuery, [generatedCode, newPlaylistId]);
+
+        await client.query('COMMIT'); // ยืนยันการบันทึกข้อมูล
+
+        res.status(201).json({ 
+            message: "สร้าง Playlist เรียบร้อยแล้ว!", 
+            playlist_code: generatedCode 
+        });
+
     } catch (err) {
+        await client.query('ROLLBACK'); // ยกเลิกหากพัง
         console.error("Error at createPlaylist:", err.message);
-        res.status(500).json({ error: "Failed to create playlist" });
+        res.status(500).json({ error: "Failed to create playlist: " + err.message });
+    } finally {
+        client.release(); // คืน Connection
     }
 };
 

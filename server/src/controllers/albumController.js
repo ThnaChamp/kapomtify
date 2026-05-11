@@ -75,54 +75,76 @@ const getAllAlbums = async (req,res) => {
    }
 };
 
-const createAlbum = async (req,res) => {
+const createAlbum = async (req, res) => {
+    // ใช้ Transaction เพื่อความปลอดภัย
+    const client = await db.connect();
+
     try {
         const {
-            album_code,
-            album_name,
+            album_name, // ตัด album_code ออกจากตัวเช็ค เพราะเราจะรันให้เอง
             artist_id,
             album_type,
             cover_image_url,
             release_date
         } = req.body;
-        if(!album_code || !album_name || !artist_id) {
-            return res.status(400).json({ error: "Missing reqquired fields"});
+
+        // เช็คแค่ฟิลด์ที่จำเป็นต้องส่งมาจากหน้าบ้านจริงๆ
+        if(!album_name || !artist_id || !release_date) {
+            return res.status(400).json({ error: "Missing required fields (Name, Artist, or Date)"});
         }
+
+        await client.query('BEGIN'); // เริ่มต้น Transaction
+
         const query = `
             INSERT INTO album (
-                album_code,
                 album_name,
                 artist_id,
                 album_type,
                 cover_image_url,
                 release_date
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *;
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING album_id;
         `;
+        
         const values = [
-            album_code,
             album_name,
             artist_id,
             (album_type || 'album').toLowerCase(),
             cover_image_url || null,
             release_date
         ];
-        
-        const result = await db.query(query, values);
 
-        res.status(201).json({
-            message: "Album created successfully",
-            data: result.rows[0]
+        // ✅ ต้องรัน Query ก่อน ถึงจะได้ result มาใช้
+        const result = await client.query(query, values);
+        const newAlbumId = result.rows[0].album_id;
+
+        // ✅ สร้าง Code จาก ID ที่เพิ่งได้มา
+        const generatedCode = `ALB-${newAlbumId}`;
+
+        // ✅ Update กลับไปที่ตาราง
+        await client.query(
+            `UPDATE album SET album_code = $1 WHERE album_id = $2`,
+            [generatedCode, newAlbumId]
+        );
+
+        await client.query('COMMIT'); // ยืนยันการบันทึก
+        
+        res.status(201).json({ 
+            message: "Album created successfully", 
+            album_code: generatedCode 
         });
+
     } catch (err) {
-        console.error("FULL ERROR OBJECT:", err);
+        await client.query('ROLLBACK'); // ยกเลิกหากพัง
         console.error("Error at createAlbum:", err.message);
 
         if (err.code === '23505') {
-            return res.status(400).json({ error: "Album code already exists"});
+            return res.status(400).json({ error: "Album code already exists" });
         }
-        res.status(500).json({ error: "Internal Server Error"});
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        client.release(); // คืน Connection ให้ Pool
     }
 };
 const deleteAlbum = async (req,res) => {

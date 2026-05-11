@@ -10,8 +10,10 @@ const userRoutes = require('./routes/userRoutes');
 const playlistRoutes = require('./routes/playlistRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const authRoutes = require('./routes/authRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const chartRoutes = require('./routes/chartRoutes');
+
 
 require('dotenv').config();
 
@@ -32,6 +34,7 @@ app.use('/api/genres', genreRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/playlists', playlistRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/transactions', transactionRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/charts', chartRoutes);
 

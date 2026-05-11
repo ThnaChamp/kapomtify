@@ -74,28 +74,62 @@ const getArtistDetail = async (req, res) => {
 };
 
 const createArtist = async (req, res) => {
-    const { artist_code, artist_name, debut_year, verified_status, profile_image_url, bio, type, gender } = req.body;
+    // 1. เชื่อมต่อ Client สำหรับ Transaction
+    const client = await db.connect();
+
+    const { 
+        artist_name, debut_year, verified_status, 
+        profile_image_url, bio, type, gender 
+    } = req.body;
+
     try {
-        const query = `
-            INSERT INTO artist (artist_code, artist_name, debut_year, verified_status, profile_image_url, bio, type, gender) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
-        `;
-        
+        await client.query('BEGIN'); // เริ่ม Transaction
+
+        // 2. เตรียมข้อมูลเบื้องต้น
         const isVerifiedBool = verified_status === 'Yes' || verified_status === true;
-        const finalDebutYear = debut_year && debut_year.trim() !== '' ? debut_year : null;
-        const finalGender = gender && gender.trim() !== '' ? gender : null; 
+        const finalDebutYear = debut_year && String(debut_year).trim() !== '' ? debut_year : null;
+        const finalGender = gender && String(gender).trim() !== '' ? gender : null; 
         const finalType = type ? type : 'Solo';
 
-        const values = [artist_code, artist_name, finalDebutYear, isVerifiedBool, profile_image_url, bio, finalType, finalGender];
+        // 3. INSERT ข้อมูลโดยเว้น artist_code ไว้ (ให้ DB รัน ID ให้ก่อน)
+        const insertQuery = `
+            INSERT INTO artist (artist_name, debut_year, verified_status, profile_image_url, bio, type, gender) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING artist_id;
+        `;
         
-        const result = await db.query(query, values);
-        res.status(201).json({ message: "Artist created", data: result.rows[0] });
+        const insertValues = [
+            artist_name, finalDebutYear, isVerifiedBool, 
+            profile_image_url, bio, finalType, finalGender
+        ];
+        
+        const result = await client.query(insertQuery, insertValues);
+        const newArtistId = result.rows[0].artist_id;
+
+        // 4. ✅ สร้าง Code จาก ID (เช่น ART-12)
+        const generatedCode = `ART-${newArtistId}`;
+
+        // 5. UPDATE รหัสกลับเข้าไปที่แถวเดิม
+        await client.query(
+            `UPDATE artist SET artist_code = $1 WHERE artist_id = $2`,
+            [generatedCode, newArtistId]
+        );
+
+        await client.query('COMMIT'); // บันทึกข้อมูลลง DB จริง
+
+        res.status(201).json({ 
+            message: "Artist created successfully", 
+            artist_code: generatedCode,
+            artist_id: newArtistId 
+        });
+
     } catch (err) {
+        await client.query('ROLLBACK'); // ถ้าพังให้ยกเลิกทั้งหมด
         console.error("Create Artist Error:", err.message);
         res.status(500).json({ error: "Create failed: " + err.message });
+    } finally {
+        client.release(); // คืน Connection ให้ Pool
     }
 };
-
 const updateArtist = async (req, res) => {
     const { id } = req.params;
     const { artist_code, artist_name, debut_year, verified_status, profile_image_url, bio } = req.body;
