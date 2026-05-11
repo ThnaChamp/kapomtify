@@ -1,4 +1,5 @@
 const db = require("../db/pool");
+
 const getOverviewStats = async (req, res) => {
     const { month, year } = req.query;
     
@@ -72,6 +73,7 @@ const getOverviewStats = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
 const getUserCountryStats = async (req, res) => {
     const { month, year } = req.query;
     const values = [];
@@ -206,8 +208,9 @@ const getContentAnalytics = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-const getRecommendationAnalytics = async (req,res) => {
-    const { month, year} = req.query;
+
+const getRecommendationAnalytics = async (req, res) => {
+    const { month, year } = req.query;
     const values = [];
     const isFiltered = month && year && month != '0' && year !== '0';
 
@@ -218,21 +221,24 @@ const getRecommendationAnalytics = async (req,res) => {
     if (isFiltered) {
         values.push(parseInt(month), parseInt(year));
     }
-    try{
-        // Recommendation Efficiency
+    try {
+        // Recommendation Efficiency (คำนวณยอดวิวจาก listen_history)
         const efficiencyQuery = `
             SELECT
                 m.title,
                 art.artist_name,
                 COUNT(DISTINCT r.user_id) AS rec_users,
-                m.play_count,
-                ROUND(CAST(m.play_count AS NUMERIC) / NULLIF(COUNT(DISTINCT r.user_id), 0), 1) AS efficiency_score
+                (SELECT COUNT(*) FROM listen_history WHERE music_id = m.music_id) AS play_count,
+                ROUND(
+                    CAST((SELECT COUNT(*) FROM listen_history WHERE music_id = m.music_id) AS NUMERIC) / 
+                    NULLIF(COUNT(DISTINCT r.user_id), 0), 1
+                ) AS efficiency_score
             FROM recommend r
             JOIN music m ON r.music_id = m.music_id
             JOIN music_artist ma ON m.music_id = ma.music_id
             JOIN artist art ON ma.artist_id = art.artist_id
             WHERE 1=1 ${timeFilter('r.generate_at')}
-            GROUP BY m.music_id, m.title,art.artist_name , m.play_count
+            GROUP BY m.music_id, m.title, art.artist_name
             ORDER BY efficiency_score DESC
             LIMIT 3
         `;
@@ -240,13 +246,13 @@ const getRecommendationAnalytics = async (req,res) => {
             SELECT
                 g.genre_name AS name,
                 ROUND(AVG(rev.rating), 1) AS avg_score
-                FROM genre g
-                JOIN music_genre mg ON g.genre_id = mg.genre_id
-                JOIN reviews rev ON mg.music_id = rev.music_id
-                WHERE 1=1 ${timeFilter('rev.create_at')}
-                GROUP BY g.genre_id, g.genre_name
-                ORDER BY avg_score DESC
-                LIMIT 4
+            FROM genre g
+            JOIN music_genre mg ON g.genre_id = mg.genre_id
+            JOIN reviews rev ON mg.music_id = rev.music_id
+            WHERE 1=1 ${timeFilter('rev.create_at')}
+            GROUP BY g.genre_id, g.genre_name
+            ORDER BY avg_score DESC
+            LIMIT 4
         `;
         const [efficiency, satisfaction] = await Promise.all([
             db.query(efficiencyQuery, values),
@@ -254,11 +260,11 @@ const getRecommendationAnalytics = async (req,res) => {
         ]);
         res.status(200).json({
             efficiency: efficiency.rows,
-            satisfaction:satisfaction.rows
+            satisfaction: satisfaction.rows
         });
-    }catch (err) {
-        console.error("Recommendation Backend error:" , err.message);
-        res.status(500).json({ error: err.message});
+    } catch (err) {
+        console.error("Recommendation Backend error:", err.message);
+        res.status(500).json({ error: err.message });
     }
 };
 
@@ -281,20 +287,22 @@ const getDashboardData = async (req, res) => {
         const activeSubsInt = parseInt(activeSubs.rows[0].count) || 0;
         const activePercent = Math.round((activeSubsInt / totalUsersInt) * 100);
 
-        // 4. Revenue (รายได้รวมจาก Transaction ที่ completed ของเดือนปัจจุบัน)
+        // 4. Revenue (รายได้รวมจาก Transaction ที่ completed)
         const revenueRes = await db.query(`
             SELECT SUM(td.unit_price * td.quantity) as total 
             FROM transactions t
             JOIN transaction_detail td ON t.transaction_id = td.transaction_id
             WHERE t.status = 'completed'
         `);
-        const revenue = parseInt(revenueRes.rows[0].total) || 281400; // ใส่ค่าเผื่อกรณีเพิ่งสร้าง DB
+        const revenue = parseInt(revenueRes.rows[0].total) || 0;
 
-        // 5. Top 5 songs this week
+        // 5. Top 5 songs (คำนวณยอดวิวจาก listen_history)
         const topSongs = await db.query(`
-            SELECT title, play_count as plays 
-            FROM music 
-            ORDER BY play_count DESC 
+            SELECT m.title, COUNT(lh.history_id) as plays 
+            FROM music m
+            LEFT JOIN listen_history lh ON m.music_id = lh.music_id
+            GROUP BY m.music_id, m.title
+            ORDER BY plays DESC 
             LIMIT 5
         `);
 
@@ -320,9 +328,9 @@ const getDashboardData = async (req, res) => {
 
         res.json({
             totalMusic: parseInt(musicCount.rows[0].count),
-            newMusicWeek: 24, // ข้อมูลจำลอง เนื่องจากไม่มีฟิลด์ created_at ใน music
+            newMusicWeek: 24, // ข้อมูลจำลองเนื่องจากไม่มีฟิลด์ created_at ใน music
             totalUsers: totalUsersInt,
-            newUsersMonth: 103, // ข้อมูลจำลองเพื่อให้ตรงดีไซน์
+            newUsersMonth: 103, // ข้อมูลจำลอง
             activeSubscriptions: activeSubsInt,
             activePercent: activePercent,
             revenue: revenue,

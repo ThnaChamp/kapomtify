@@ -1,5 +1,4 @@
 const db = require("../db/pool");
-const { get } = require("../routes/albumRoutes");
 
 const getAllAlbums = async (req,res) => {
    try {
@@ -177,11 +176,12 @@ const getAlbumById = async (req,res) => {
             SELECT
                 al.*,
                 ar.artist_name,
-                COALESCE((
-                    SELECT SUM(play_count)
-                    FROM music
-                    WHERE album_id = al.album_id
-                ), 0)::bigint AS total_play,
+                (
+                    SELECT COUNT(*)
+                    FROM listen_history lh
+                    JOIN music m2 ON lh.music_id = m2.music_id
+                    WHERE m2.album_id = al.album_id
+                )::bigint AS total_play,
 
                 (
                     SELECT COUNT(*)

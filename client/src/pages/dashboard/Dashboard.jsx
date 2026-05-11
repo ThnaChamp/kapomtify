@@ -15,7 +15,7 @@ export default function Dashboard() {
 
   // ชุดสีสำหรับกราฟให้เหมือนดีไซน์
   const PIE_COLORS = ['#1b5e20', '#A5D6A7', '#FDE047', '#4CAF50'];
-  const BAR_COLORS = ['#FDE047', '#F472B6', '#A5D6A7', '#FBBF24', '#38BDF8', '#C084FC', '#FB7185'];
+  const BAR_COLORS = ['#fae992', '#ecd357', '#b4e922', '#a3d41a', '#1e8d08', '#0e7430', '#065e23'];
 
   return (
     <div className="p-8 font-sans text-[#e0e0e0] flex flex-col gap-6">

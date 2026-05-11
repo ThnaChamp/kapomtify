@@ -69,11 +69,13 @@ const getArtistDetail = async (req, res) => {
         const totalAlbums = parseInt(albumCountRes.rows[0].count);
 
         const topSongsQuery = `
-            SELECT m.title, m.play_count 
+            SELECT m.title, COUNT(lh.history_id) as play_count
             FROM music m
             JOIN music_artist ma ON m.music_id = ma.music_id
+            LEFT JOIN listen_history lh ON m.music_id = lh.music_id
             WHERE ma.artist_id = $1
-            ORDER BY m.play_count DESC
+            GROUP BY m.music_id, m.title
+            ORDER BY play_count DESC
             LIMIT 6;
         `;
         const topSongsRes = await db.query(topSongsQuery, [id]);

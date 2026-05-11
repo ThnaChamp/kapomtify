@@ -177,7 +177,7 @@ const getMusicDetail = async (req, res) => {
                 m.duration,
                 m.track_number,
                 m.file_url,
-                m.play_count,         -- ✅ เพิ่มบรรทัดนี้เพื่อดึงยอดวิว
+                (SELECT COUNT(*) FROM listen_history WHERE music_id = m.music_id) AS play_count,
                 m.is_explicit,
                 al.album_name,
                 al.cover_image_url,
@@ -190,7 +190,7 @@ const getMusicDetail = async (req, res) => {
             LEFT JOIN music_genre mg ON m.music_id = mg.music_id
             LEFT JOIN genre g ON mg.genre_id = g.genre_id
             WHERE m.music_id = $1
-            GROUP BY m.music_id, al.album_id, al.album_name, al.cover_image_url; -- ✅ ใส่ให้ครบตามมาตรฐาน Postgres
+            GROUP BY m.music_id, al.album_id, al.album_name, al.cover_image_url;
         `;
 
         const result = await db.query(query, [id]);
@@ -217,12 +217,12 @@ const updateMusic = async (req, res) => {
             WHERE music_id = $7
         `;
         const values = [
-            music_code || "",           // ถ้าไม่มีโค้ด ให้ส่ง string ว่าง
-            title || "Untitled",        // ถ้าไม่มีชื่อ ให้ส่ง Untitled
-            duration || 0,              // ถ้าไม่มีความยาว ให้ส่ง 0
-            release_date || null,       // วันที่ยอมให้เป็น null ได้ถ้า DB อนุญาต (ถ้าไม่ได้ให้ใส่ new Date())
-            file_url || "",             // ✅ แก้ปัญหา file_url null
-            is_explicit ?? false,       // ✅ แก้ปัญหา is_explicit null (ใช้ ?? เพื่อเช็ค null/undefined)
+            music_code || "",       
+            title || "Untitled",     
+            duration || 0,             
+            release_date || null,     
+            file_url || "",         
+            is_explicit ?? false,       
             id
         ];
         const explicitValue = (is_explicit === null || is_explicit === undefined) ? false : is_explicit;
