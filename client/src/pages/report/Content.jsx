@@ -1,73 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 
-// ── PDF Color constants ──
+// ── PDF Color palette (Spotify dark + accent) ──
 const C = {
-  bg:     [26,  26,  26],
-  card:   [42,  42,  42],
-  card2:  [52,  52,  52],
-  green:  [29,  185, 84],
-  white:  [255, 255, 255],
-  gray:   [136, 136, 136],
-  lgray:  [200, 200, 200],
-  red:    [231, 76,  60],
-  border: [65,  65,  65],
-  header: [17,  17,  17],
-  footer: [34,  34,  34],
-  track:  [62,  62,  62],
-  avatar: [72,  72,  72],
+  bg:       [15,  15,  15],
+  card:     [28,  28,  28],
+  card2:    [38,  38,  38],
+  card3:    [48,  48,  48],
+  green:    [29,  185, 84],
+  greenDim: [20,  130, 58],
+  white:    [255, 255, 255],
+  offwhite: [230, 230, 230],
+  gray:     [120, 120, 120],
+  lgray:    [180, 180, 180],
+  dgray:    [70,  70,  70],
+  red:      [255, 72,  72],
+  redDim:   [180, 40,  40],
+  border:   [55,  55,  55],
+  header:   [10,  10,  10],
+  yellow:   [255, 211, 78],
+  blue:     [66,  153, 225],
 };
 
 // ── jsPDF helpers ──
-function fillRect(doc, x, y, w, h, rgb) {
-  doc.setFillColor(...rgb);
-  doc.rect(x, y, w, h, 'F');
+const fillRect  = (doc, x, y, w, h, rgb)           => { doc.setFillColor(...rgb);   doc.rect(x, y, w, h, 'F'); };
+const setDraw   = (doc, rgb, lw = 0.3)             => { doc.setDrawColor(...rgb);   doc.setLineWidth(lw); };
+
+function roundRect(doc, x, y, w, h, r, fill, stroke) {
+  doc.setFillColor(...fill);
+  setDraw(doc, stroke ?? fill, stroke ? 0.3 : 0);
+  doc.roundedRect(x, y, w, h, r, r, stroke ? 'FD' : 'F');
 }
 
-function roundRect(doc, x, y, w, h, r, fillRgb, strokeRgb) {
-  doc.setFillColor(...fillRgb);
-  if (strokeRgb) {
-    doc.setDrawColor(...strokeRgb);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(x, y, w, h, r, r, 'FD');
-  } else {
-    doc.setDrawColor(...fillRgb);
-    doc.roundedRect(x, y, w, h, r, r, 'F');
-  }
-}
-
-function txt(doc, str, x, y, rgb, size, bold = false) {
+function txt(doc, str, x, y, rgb, size, bold = false, align = 'left') {
   doc.setTextColor(...rgb);
   doc.setFontSize(size);
   doc.setFont('helvetica', bold ? 'bold' : 'normal');
-  doc.text(String(str), x, y);
+  doc.text(String(str), x, y, { align });
 }
 
-function txtRight(doc, str, x, y, rgb, size, bold = false) {
-  doc.setTextColor(...rgb);
-  doc.setFontSize(size);
-  doc.setFont('helvetica', bold ? 'bold' : 'normal');
-  doc.text(String(str), x, y, { align: 'right' });
+function circ(doc, cx, cy, r, fill, stroke) {
+  doc.setFillColor(...fill);
+  setDraw(doc, stroke ?? fill, stroke ? 0.4 : 0);
+  doc.circle(cx, cy, r, stroke ? 'FD' : 'F');
 }
 
-function circ(doc, cx, cy, r, fillRgb, strokeRgb) {
-  doc.setFillColor(...fillRgb);
-  if (strokeRgb) {
-    doc.setDrawColor(...strokeRgb);
-    doc.setLineWidth(0.5);
-    doc.circle(cx, cy, r, 'FD');
-  } else {
-    doc.setDrawColor(...fillRgb);
-    doc.circle(cx, cy, r, 'F');
+// Draws a horizontal gradient-like bar using stacked rects
+function gradientBar(doc, x, y, w, h, fromRgb, toRgb) {
+  const steps = Math.ceil(w);
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    const r = Math.round(fromRgb[0] + (toRgb[0] - fromRgb[0]) * t);
+    const g = Math.round(fromRgb[1] + (toRgb[1] - fromRgb[1]) * t);
+    const b = Math.round(fromRgb[2] + (toRgb[2] - fromRgb[2]) * t);
+    doc.setFillColor(r, g, b);
+    doc.rect(x + i, y, 1, h, 'F');
   }
 }
 
-// draw play/skip icon (red triangle + bar)
-function drawSkipIcon(doc, cx, cy) {
-  doc.setFillColor(...C.red);
-  doc.triangle(cx - 4, cy - 5, cx - 4, cy + 5, cx + 4, cy, 'F');
-  doc.setFillColor(...C.red);
-  doc.rect(cx + 6, cy - 5, 2.5, 10, 'F');
+// Dot for decorative use
+function dot(doc, x, y, r, fill) { circ(doc, x, y, r, fill); }
+
+// ── Skip forward icon ──
+function skipIcon(doc, cx, cy, color) {
+  doc.setFillColor(...color);
+  doc.triangle(cx - 3.5, cy - 4, cx - 3.5, cy + 4, cx + 2, cy, 'F');
+  doc.triangle(cx + 2,   cy - 4, cx + 2,   cy + 4, cx + 7, cy, 'F');
+  doc.rect(cx + 7.5, cy - 4, 2, 8, 'F');
+}
+
+// ── Horizontal pill badge ──
+function badge(doc, x, y, label, fillRgb, textRgb, size = 5) {
+  const pad = 4; const bh = size + 3;
+  doc.setFontSize(size);
+  const tw = doc.getTextWidth(label);
+  roundRect(doc, x, y - bh + 1, tw + pad * 2, bh, bh / 2, fillRgb);
+  txt(doc, label, x + pad, y, textRgb, size, true);
 }
 
 const ContentAnalytics = () => {
@@ -113,7 +121,7 @@ const ContentAnalytics = () => {
     });
   };
 
-  // ── Export CSV ──
+  // ── Export CSV (unchanged) ──
   const handleExportCSV = () => {
     const { genres, skipArtists } = data;
     const now = new Date();
@@ -162,8 +170,9 @@ const ContentAnalytics = () => {
   const handleExportPDF = () => {
     const { genres, skipArtists } = data;
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit' });
-    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const dateStr  = now.toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'2-digit' });
+    const timeStr  = now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', hour12:false });
+    const isoDate  = now.toISOString().split('T')[0];
 
     const monthNames = ['','January','February','March','April','May','June',
                         'July','August','September','October','November','December'];
@@ -171,168 +180,298 @@ const ContentAnalytics = () => {
     const yearLabel  = tempFilters.year  === '0' ? 'All Years'  : String(tempFilters.year);
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const W = doc.internal.pageSize.getWidth();   // 297
-    const H = doc.internal.pageSize.getHeight();  // 210
-    const mg = 14;
+    const W = 297, H = 210, mg = 14;
 
-    // ── Background ──
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // BACKGROUND
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
     fillRect(doc, 0, 0, W, H, C.bg);
 
-    // ── Header bar ──
-    fillRect(doc, 0, 0, W, 18, C.header);
-    txt(doc, 'Content', mg, 12, C.white, 12, true);
-    roundRect(doc, W - 52, 4, 22, 9, 2, C.card);
-    txt(doc, 'Admin', W - 49, 10, C.lgray, 6.5);
-    circ(doc, W - 18, 9, 7, [85, 85, 85]);
-    txt(doc, 'AD', W - 18, 11, C.white, 5.5, true);
+    // Subtle top-left glow blob (layered translucent circles)
+    const glowColors = [[29,185,84,0.04],[29,185,84,0.03],[29,185,84,0.02]];
+    [[55,55,38],[55,55,52],[55,55,64]].forEach(([cx,cy,r], i) => {
+      const alpha = [0.06,0.04,0.02][i];
+      doc.setFillColor(29,185,84);
+      doc.setGState(doc.GState({ opacity: alpha }));
+      doc.circle(cx, cy, r, 'F');
+    });
+    doc.setGState(doc.GState({ opacity: 1 }));
 
-    // ── Sub-header row ──
-    const subY = 26;
-    txt(doc, 'Data Insights Report', mg, subY, C.gray, 7, true);
+    // Bottom-right red glow
+    [[255,72,72],[255,72,72],[255,72,72]].forEach((_, i) => {
+      const rads = [45,58,70][i];
+      doc.setFillColor(255,72,72);
+      doc.setGState(doc.GState({ opacity: [0.04,0.025,0.015][i] }));
+      doc.circle(W - 55, H - 55, rads, 'F');
+    });
+    doc.setGState(doc.GState({ opacity: 1 }));
 
-    // Month pill
-    const mPillW = Math.max(28, monthLabel.length * 2.1 + 8);
-    roundRect(doc, 65, subY - 6, mPillW, 9, 2, C.card);
-    txt(doc, monthLabel + ' v', 68, subY, C.lgray, 6);
+    // Faint grid lines for depth (vertical)
+    doc.setDrawColor(...C.dgray);
+    doc.setLineWidth(0.08);
+    for (let gx = mg; gx < W - mg; gx += 18) {
+      doc.setGState(doc.GState({ opacity: 0.12 }));
+      doc.line(gx, 22, gx, H - 12);
+    }
+    doc.setGState(doc.GState({ opacity: 1 }));
 
-    // Year pill
-    const yPillX = 65 + mPillW + 4;
-    roundRect(doc, yPillX, subY - 6, 26, 9, 2, C.card);
-    txt(doc, yearLabel + ' v', yPillX + 3, subY, C.lgray, 6);
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // HEADER STRIP
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    fillRect(doc, 0, 0, W, 20, C.header);
+    // Green left accent stripe
+    fillRect(doc, 0, 0, 3, 20, C.green);
 
-    // Search icon (drawn as circle + line)
-    const sIconX = yPillX + 32;
-    doc.setDrawColor(...C.gray);
-    doc.setLineWidth(0.6);
-    doc.circle(sIconX + 4, subY - 1, 3.5, 'S');
-    doc.line(sIconX + 6.5, subY - 3, sIconX + 9, subY - 5.5);
+    // Logo mark (small circle + wordmark)
+    circ(doc, mg + 7, 10, 5, C.green);
+    txt(doc, '♫', mg + 4.8, 12.5, C.bg, 7, true);
+    txt(doc, 'Kapomtify', mg + 16, 11.5, C.white, 8, true);
+    txt(doc, 'Admin Dashboard', mg + 16, 16, C.gray, 5);
 
-    txt(doc, `Generated: ${dateStr}  ${timeStr}`, mg, subY + 8, C.gray, 5.5);
+    // Center title
+    txt(doc, 'CONTENT INSIGHTS REPORT', W / 2, 12, C.white, 9, true, 'center');
 
-    // Export CSV button
-    roundRect(doc, W - 60, subY - 6, 22, 9, 2, C.bg, C.lgray);
-    txt(doc, 'Export CSV', W - 59, subY, C.lgray, 5.5, true);
-    // Export PDF button
-    roundRect(doc, W - 34, subY - 6, 22, 9, 2, C.green);
-    txt(doc, 'Export PDF', W - 33, subY, C.white, 5.5, true);
+    // Right: avatar chip
+    const chipX = W - 54;
+    roundRect(doc, chipX, 5.5, 40, 10, 5, C.card2);
+    circ(doc, chipX + 35, 10.5, 4.5, [80, 80, 80]);
+    txt(doc, 'A', chipX + 33.5, 12.5, C.white, 5, true);
+    txt(doc, 'Admin', chipX + 5, 12, C.lgray, 5.5);
 
-    // Separator
-    doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.3);
-    doc.line(mg, subY + 11, W - mg, subY + 11);
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // META BAR
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const metaY = 28;
+    fillRect(doc, 0, 21, W, 14, [18, 18, 18]);
+    setDraw(doc, C.border, 0.25);
+    doc.line(0, 21, W, 21);
+    doc.line(0, 35, W, 35);
 
-    // ── Body layout ──
-    // Cards sit between separator (subY+11) and footer (H-10)
-    const cardTop    = subY + 15;          // top of both cards (in PDF coords from top=0)
-    const cardBottom = H - 14;             // bottom of both cards
-    const cardH      = cardBottom - cardTop;
-    const leftW      = (W - mg * 2) * 0.50;
-    const rightW     = (W - mg * 2) - leftW - 8;
+    // Period pill
+    badge(doc, mg, metaY + 4.5, `Period: ${monthLabel} ${yearLabel}`, [29, 185, 84, 0.15], C.green, 5.5);
+    // Generated badge
+    const genW = doc.getTextWidth(`Generated: ${dateStr}  ${timeStr}`) + 8;
+    badge(doc, mg + 72, metaY + 4.5, `Generated: ${dateStr}  ${timeStr}`, C.card3, C.lgray, 5);
+
+    // Export buttons (decorative)
+    const btnY = metaY - 2;
+    roundRect(doc, W - 68, btnY, 24, 9, 2, C.card2, C.border);
+    txt(doc, 'Export CSV', W - 66, btnY + 5.8, C.lgray, 5, true);
+    roundRect(doc, W - 40, btnY, 24, 9, 2, C.green);
+    txt(doc, 'Export PDF', W - 38, btnY + 5.8, C.bg, 5.5, true);
+
+    // Decorative dots row
+    [C.green, C.red, C.yellow, C.blue].forEach((col, i) => {
+      dot(doc, W - 80 - i * 6, metaY + 2.5, 1.2, col);
+    });
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // BODY
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const bodyTop    = 39;
+    const bodyBottom = H - 14;
+    const bodyH      = bodyBottom - bodyTop;
+    const gutter     = 7;
+    const leftW      = (W - mg * 2 - gutter) * 0.56;
+    const rightW     = (W - mg * 2 - gutter) * 0.44;
     const leftX      = mg;
-    const rightX     = mg + leftW + 8;
+    const rightX     = mg + leftW + gutter;
 
-    // jsPDF y=0 is TOP, but drawString y is baseline from top
-    // roundedRect: x,y = top-left corner
-    const cardY_pdf  = cardTop;            // top-left y for roundedRect
+    // ── LEFT CARD ──
+    roundRect(doc, leftX, bodyTop, leftW, bodyH, 6, C.card);
+    // Green top accent line
+    fillRect(doc, leftX, bodyTop, leftW, 1.5, C.green);
+    // Top-left corner glow
+    doc.setFillColor(...C.green);
+    doc.setGState(doc.GState({ opacity: 0.06 }));
+    doc.roundedRect(leftX, bodyTop, leftW * 0.5, bodyH * 0.5, 6, 6, 'F');
+    doc.setGState(doc.GState({ opacity: 1 }));
 
-    // ══ LEFT: Genre Loyalty vs Reach ══
-    roundRect(doc, leftX, cardY_pdf, leftW, cardH, 8, C.card);
+    // Card header
+    const lhY = bodyTop + 11;
+    // Section label pill
+    roundRect(doc, leftX + 10, bodyTop + 3.5, 38, 6, 3, [29, 185, 84, 0.18]);
+    txt(doc, 'GENRE ANALYTICS', leftX + 12, bodyTop + 8, C.green, 4.5, true);
 
-    // Title block (y measured from top of page)
-    const titleY  = cardY_pdf + 10;
-    txt(doc, 'Genre Loyalty vs Reach', leftX + 14, titleY, C.white, 10, true);
-    txt(doc, 'Engagement depth per unique listener', leftX + 14, titleY + 7, C.gray, 6);
+    txt(doc, 'Genre Loyalty vs Reach', leftX + 10, lhY + 6, C.white, 10, true);
+    txt(doc, 'Engagement depth per unique listener', leftX + 10, lhY + 12, C.gray, 5.5);
 
-    doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.3);
-    doc.line(leftX + 8, titleY + 11, leftX + leftW - 8, titleY + 11);
+    // Thin separator with glow
+    setDraw(doc, C.border, 0.25);
+    doc.line(leftX + 8, lhY + 16, leftX + leftW - 8, lhY + 16);
 
     // Genre rows
-    const genreAreaTop = titleY + 15;
-    const genreAreaH   = cardH - (genreAreaTop - cardY_pdf) - 6;
-    const maxRatio     = genres.length > 0 ? Math.max(...genres.map(g => parseFloat(g.plays_per_user))) : 1;
-    const barMaxW      = leftW - 32;
-    const genreRowH    = genreAreaH / Math.max(genres.length, 1);
+    const maxRatio   = genres.length > 0 ? Math.max(...genres.map(g => parseFloat(g.plays_per_user) || 0)) : 1;
+    const barAreaTop = lhY + 20;
+    const barAreaH   = bodyH - (barAreaTop - bodyTop) - 8;
+    const rowCount   = Math.max(genres.length, 1);
+    const rowH       = barAreaH / rowCount;
+    const barMaxW    = leftW - 30;
+    const barH       = 5.5;
 
     if (genres.length === 0) {
-      txt(doc, 'No data for selected period', leftX + leftW / 2, cardY_pdf + cardH / 2, C.gray, 7);
+      txt(doc, 'No data for selected period', leftX + leftW / 2, bodyTop + bodyH / 2, C.gray, 7, false, 'center');
     } else {
       genres.forEach((genre, i) => {
-        const ry    = genreAreaTop + i * genreRowH + 4;
+        const ry    = barAreaTop + i * rowH;
         const ratio = parseFloat(genre.plays_per_user) || 0;
+        const barFill = barMaxW * (ratio / maxRatio);
 
-        // genre name
-        txt(doc, genre.name, leftX + 14, ry, C.white, 8, true);
-        // plays/users right-aligned
-        txtRight(doc, `${ratio.toFixed(2)} plays / users`, leftX + leftW - 10, ry, C.gray, 6);
+        // Row hover strip (subtle alternating)
+        if (i % 2 === 0) {
+          doc.setFillColor(...C.card2);
+          doc.setGState(doc.GState({ opacity: 0.5 }));
+          doc.roundedRect(leftX + 7, ry + 0.5, leftW - 14, rowH - 1, 2, 2, 'F');
+          doc.setGState(doc.GState({ opacity: 1 }));
+        }
 
-        // bar track (dark background)
-        const barY = ry + 3;
-        doc.setFillColor(...C.track);
-        doc.roundedRect(leftX + 14, barY, barMaxW, 5, 1, 1, 'F');
+        // Rank number
+        const rankColor = i === 0 ? C.yellow : i === 1 ? C.lgray : i === 2 ? [205, 127, 50] : C.dgray;
+        txt(doc, `${i + 1}`, leftX + 13, ry + rowH / 2 + 2, rankColor, 7, true, 'center');
 
-        // bar fill (green)
-        const fillW = Math.max(6, barMaxW * (ratio / maxRatio));
-        doc.setFillColor(...C.green);
-        doc.roundedRect(leftX + 14, barY, fillW, 5, 1, 1, 'F');
-      });
-    }
+        // Genre name
+        txt(doc, genre.name, leftX + 22, ry + rowH / 2 - 1, C.white, 7.5, true);
 
-    // ══ RIGHT: High Skip Rate Artists ══
-    roundRect(doc, rightX, cardY_pdf, rightW, cardH, 8, C.card);
+        // Plays / user label
+        txt(doc, `${ratio.toFixed(2)} plays/user`, leftX + leftW - 9, ry + rowH / 2 - 1, C.gray, 5, false, 'right');
 
-    // Skip icon + title
-    const skipTitleY = cardY_pdf + 12;
-    drawSkipIcon(doc, rightX + 14, skipTitleY);
-    txt(doc, 'High Skip Rate Artists', rightX + 27, skipTitleY + 3, C.red, 10, true);
+        // Bar track
+        const barY = ry + rowH / 2 + 2.5;
+        roundRect(doc, leftX + 22, barY, barMaxW, barH, 2, [40, 40, 40]);
 
-    // Column headers
-    const colY = skipTitleY + 12;
-    txt(doc, 'ARTIST', rightX + 32, colY, C.gray, 5.5, true);
-    txtRight(doc, 'SKIP RATE', rightX + rightW - 10, colY, C.gray, 5.5, true);
+        // Gradient bar fill (green → cyan-ish)
+        if (barFill > 3) {
+          gradientBar(doc, leftX + 22, barY, barFill, barH, C.green, [30, 215, 140]);
+          // End glow dot
+          circ(doc, leftX + 22 + barFill, barY + barH / 2, barH / 2 + 0.5, [30, 215, 140]);
+        }
 
-    doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.3);
-    doc.line(rightX + 8, colY + 3, rightX + rightW - 8, colY + 3);
-
-    // Artist rows
-    const artistAreaTop = colY + 6;
-    const artistAreaH   = cardH - (artistAreaTop - cardY_pdf) - 6;
-    const artistRowH    = artistAreaH / Math.max(skipArtists.length, 1);
-
-    if (skipArtists.length === 0) {
-      txt(doc, 'No data for selected period', rightX + rightW / 2, cardY_pdf + cardH / 2, C.gray, 7);
-    } else {
-      skipArtists.forEach((artist, i) => {
-        const ry   = artistAreaTop + i * artistRowH + artistRowH / 2;
-        const rate = parseFloat(artist.skip_rate) || 0;
-
-        // Avatar circle
-        circ(doc, rightX + 18, ry, 8, C.avatar);
-        txt(doc, artist.name[0].toUpperCase(), rightX + 18, ry + 2.5, C.gray, 6.5, true);
-
-        // Artist name
-        txt(doc, artist.name, rightX + 32, ry + 2.5, C.white, 8.5, true);
-
-        // Skip rate
-        const rateColor = rate > 0 ? C.red : C.gray;
-        txtRight(doc, `${rate.toFixed(1)}%`, rightX + rightW - 10, ry + 2.5, rateColor, 9.5, true);
-
-        // Separator between rows
-        if (i < skipArtists.length - 1) {
-          doc.setDrawColor(...C.border);
-          doc.setLineWidth(0.25);
-          doc.line(rightX + 8, ry + artistRowH / 2 + 2, rightX + rightW - 8, ry + artistRowH / 2 + 2);
+        // Separator
+        if (i < genres.length - 1) {
+          setDraw(doc, C.border, 0.15);
+          doc.line(leftX + 10, ry + rowH, leftX + leftW - 10, ry + rowH);
         }
       });
     }
 
-    // ── Footer ──
-    fillRect(doc, 0, H - 10, W, 10, C.footer);
-    txt(doc, 'Music & Album Platform  |  Content Insights Report', mg, H - 4, C.gray, 5.5);
-    txtRight(doc, `Page 1 of 1  |  ${now.toISOString().split('T')[0]}`, W - mg, H - 4, C.gray, 5.5);
+    // ── RIGHT CARD ──
+    roundRect(doc, rightX, bodyTop, rightW, bodyH, 6, C.card);
+    // Red top accent line
+    fillRect(doc, rightX, bodyTop, rightW, 1.5, C.red);
+    // Subtle red glow behind header
+    doc.setFillColor(...C.red);
+    doc.setGState(doc.GState({ opacity: 0.05 }));
+    doc.roundedRect(rightX, bodyTop, rightW, bodyH * 0.4, 6, 6, 'F');
+    doc.setGState(doc.GState({ opacity: 1 }));
 
-    doc.save(`content-analytics-${now.toISOString().split('T')[0]}.pdf`);
+    // Card header
+    const rhY = bodyTop + 11;
+    // Section label pill
+    roundRect(doc, rightX + 10, bodyTop + 3.5, 38, 6, 3, [255, 72, 72, 0.15]);
+    txt(doc, 'SKIP ANALYSIS', rightX + 12, bodyTop + 8, C.red, 4.5, true);
+
+    // Skip icon + title
+    skipIcon(doc, rightX + 16, rhY + 3, C.red);
+    txt(doc, 'High Skip Rate Artists', rightX + 28, rhY + 6, C.white, 10, true);
+    txt(doc, 'Artists most frequently skipped by listeners', rightX + 10, rhY + 12, C.gray, 5.5);
+
+    // Columns header
+    const colHeaderY = rhY + 18;
+    setDraw(doc, C.border, 0.25);
+    doc.line(rightX + 8, colHeaderY - 2, rightX + rightW - 8, colHeaderY - 2);
+    txt(doc, '#',         rightX + 13,          colHeaderY, C.dgray, 5, true);
+    txt(doc, 'ARTIST',    rightX + 22,          colHeaderY, C.dgray, 5, true);
+    txt(doc, 'SKIP RATE', rightX + rightW - 10, colHeaderY, C.dgray, 5, true, 'right');
+    doc.line(rightX + 8, colHeaderY + 2, rightX + rightW - 8, colHeaderY + 2);
+
+    // Artist rows
+    const artistAreaTop = colHeaderY + 5;
+    const artistAreaH   = bodyH - (artistAreaTop - bodyTop) - 6;
+    const aRowH         = artistAreaH / Math.max(skipArtists.length, 1);
+
+    if (skipArtists.length === 0) {
+      txt(doc, 'No data for selected period', rightX + rightW / 2, bodyTop + bodyH / 2, C.gray, 7, false, 'center');
+    } else {
+      skipArtists.forEach((artist, i) => {
+        const ry   = artistAreaTop + i * aRowH;
+        const cy   = ry + aRowH / 2;
+        const rate = parseFloat(artist.skip_rate) || 0;
+
+        // Alternating row bg
+        if (i % 2 === 0) {
+          doc.setFillColor(...C.card2);
+          doc.setGState(doc.GState({ opacity: 0.45 }));
+          doc.roundedRect(rightX + 7, ry + 0.5, rightW - 14, aRowH - 1, 2, 2, 'F');
+          doc.setGState(doc.GState({ opacity: 1 }));
+        }
+
+        // Rank
+        const rColor = i === 0 ? C.red : i === 1 ? [255, 130, 100] : i === 2 ? [255, 160, 130] : C.dgray;
+        txt(doc, `${i + 1}`, rightX + 15, cy + 2.5, rColor, 6.5, true, 'center');
+
+        // Avatar circle with initial
+        const avatarColors = [
+          [80, 30, 30],[60, 35, 80],[30, 60, 80],[30, 80, 55],[80, 70, 20]
+        ];
+        const avColor = avatarColors[i % avatarColors.length];
+        circ(doc, rightX + 26, cy, 7, avColor);
+        // Subtle ring
+        setDraw(doc, C.red, 0.3);
+        doc.setGState(doc.GState({ opacity: 0.4 }));
+        doc.circle(rightX + 26, cy, 7.5, 'S');
+        doc.setGState(doc.GState({ opacity: 1 }));
+        txt(doc, (artist.name[0] || '?').toUpperCase(), rightX + 24.5, cy + 2.5, C.white, 6, true);
+
+        // Artist name
+        txt(doc, artist.name, rightX + 37, cy + 2.5, C.offwhite, 7.5, true);
+
+        // Skip rate pill
+        const isHigh  = rate > 10;
+        const pillCol = isHigh ? [70, 20, 20] : [40, 40, 40];
+        const rateTxt = `${rate.toFixed(1)}%`;
+        const pillW   = doc.getTextWidth(rateTxt) + 8;
+        const pillX   = rightX + rightW - 12 - pillW;
+        roundRect(doc, pillX, cy - 5, pillW, 10, 5, pillCol);
+        txt(doc, rateTxt, pillX + pillW / 2, cy + 2.5, isHigh ? C.red : C.lgray, 7.5, true, 'center');
+
+        // Thin separator
+        if (i < skipArtists.length - 1) {
+          setDraw(doc, C.border, 0.15);
+          doc.line(rightX + 10, ry + aRowH, rightX + rightW - 10, ry + aRowH);
+        }
+      });
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // FOOTER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    fillRect(doc, 0, H - 12, W, 12, C.header);
+    fillRect(doc, 0, H - 12, W, 0.5, C.border);
+
+    // Green bottom accent
+    fillRect(doc, 0, H - 1, W, 1, C.green);
+
+    // Left: branding
+    circ(doc, mg + 4, H - 5.5, 3, C.green);
+    txt(doc, '♫', mg + 2.8, H - 4, C.bg, 4, true);
+    txt(doc, 'Kapomtify  |  Content Insights Report', mg + 10, H - 4, C.gray, 5);
+
+    // Center: data summary
+    const totalGenres = genres.length;
+    const totalSkip   = skipArtists.length;
+    txt(doc, `${totalGenres} Genre${totalGenres !== 1 ? 's' : ''}  ·  ${totalSkip} Artist${totalSkip !== 1 ? 's' : ''} analyzed`, W / 2, H - 4, C.dgray, 5, false, 'center');
+
+    // Right: page info
+    txt(doc, `Page 1 of 1  ·  ${isoDate}`, W - mg, H - 4, C.gray, 5, false, 'right');
+
+    // Decorative corner dots (bottom right)
+    [[C.green, 0.8],[C.red, 0.6],[C.yellow, 0.4]].forEach(([col, op], i) => {
+      doc.setGState(doc.GState({ opacity: op }));
+      dot(doc, W - mg - 25 + i * 5, H - 6, 1, col);
+    });
+    doc.setGState(doc.GState({ opacity: 1 }));
+
+    doc.save(`content-analytics-${isoDate}.pdf`);
   };
 
   return (
