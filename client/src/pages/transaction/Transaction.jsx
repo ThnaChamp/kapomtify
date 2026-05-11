@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
+import SearchBox from "../../components/searchBox";
+import FilterBtn from "../../components/filterBtn";
+import DeleteModal from "../../components/DeleteModal";
 
 const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:4567") + "/api";
 
-const STATUS_STYLE = {
-  completed: { label: "SUCCESS",  color: "#1db954", border: "#1db954" },
-  failed:    { label: "FAILED",   color: "#e05252", border: "#e05252" },
-  pending:   { label: "PENDING",  color: "#e0c452", border: "#e0c452" },
-  refunded:  { label: "REFUNDED", color: "#888",    border: "#888"    },
+const STATUS_CONFIG = {
+  completed: { label: "SUCCESS",  bg: "bg-[#1db954]/10", text: "text-[#1db954]", border: "border-[#1db954]/20", dot: "bg-[#1db954]" },
+  failed:    { label: "FAILED",   bg: "bg-[#e05252]/10", text: "text-[#e05252]", border: "border-[#e05252]/20", dot: "bg-[#e05252]" },
+  pending:   { label: "PENDING",  bg: "bg-[#e0c452]/10", text: "text-[#e0c452]", border: "border-[#e0c452]/20", dot: "bg-[#e0c452]" },
+  refunded:  { label: "REFUNDED", bg: "bg-gray-500/10",  text: "text-gray-400",  border: "border-gray-500/20",  dot: "bg-gray-400"  },
 };
 
 const PAYMENT_SVG = {
@@ -41,15 +44,10 @@ const fmtDate = (iso) => {
 // ── Status Badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const key = (status || "").toLowerCase();
-  const s = STATUS_STYLE[key] || STATUS_STYLE.pending;
+  const s = STATUS_CONFIG[key] || STATUS_CONFIG.pending;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      color: s.color, border: `1.5px solid ${s.border}`,
-      borderRadius: 20, padding: "3px 12px",
-      fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", whiteSpace: "nowrap",
-    }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${s.bg} ${s.text} ${s.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
   );
@@ -57,7 +55,7 @@ const StatusBadge = ({ status }) => {
 
 const Chevron = ({ open }) => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-    style={{ transition: "transform .2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+    className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`}>
     <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
@@ -96,34 +94,36 @@ const DetailPanel = ({ transactionId, currency, onRefund }) => {
   };
 
   return (
-    <div style={{ background: "#0d0d0d", borderTop: "1px solid #222", padding: "18px 24px 20px 56px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+    <div className="bg-[#141414] border-t border-[#2a2a2a] px-14 py-5">
+      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
         {/* Table */}
-        <div style={{ flex: 1 }}>
-          <p style={{ color: "#aaa", fontSize: 11, fontWeight: 700, marginBottom: 12, letterSpacing: "0.07em" }}>
-            TRANSACTION DETAIL (ITEM)
+        <div className="flex-1 w-full overflow-x-auto custom-scrollbar">
+          <p className="text-[#8e8e8e] text-[11px] font-bold uppercase tracking-[0.1em] mb-4">
+            Transaction Detail (Items)
           </p>
           {loading ? (
-            <p style={{ color: "#555", fontSize: 12 }}>กำลังโหลด...</p>
+            <p className="text-gray-500 text-xs animate-pulse">Loading detail...</p>
           ) : rows.length === 0 ? (
-            <p style={{ color: "#555", fontSize: 12 }}>ไม่มีรายละเอียด</p>
+            <p className="text-gray-500 text-xs">No detail available</p>
           ) : (
-            <table style={{ borderCollapse: "collapse", minWidth: 500 }}>
+            <table className="w-full text-left border-collapse min-w-[500px]">
               <thead>
-                <tr>
-                  {["Plan code","Plan description","Unit Price","Qty","Period covered"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", fontSize: 11, color: "#666", fontWeight: 600, padding: "0 20px 8px 0", whiteSpace: "nowrap" }}>{h}</th>
-                  ))}
+                <tr className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                  <th className="pb-3 pr-4">Plan code</th>
+                  <th className="pb-3 pr-4">Description</th>
+                  <th className="pb-3 pr-4">Unit Price</th>
+                  <th className="pb-3 pr-4">Qty</th>
+                  <th className="pb-3">Period covered</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#222]">
                 {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.plan_code || "—"}</td>
-                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.plan_description || "—"}</td>
-                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.unit_price}{cur}</td>
-                    <td style={{ padding: "6px 20px 6px 0", fontSize: 12, color: "#ccc" }}>{r.quantity}</td>
-                    <td style={{ padding: "6px 0 6px 0", fontSize: 12, color: "#ccc" }}>
+                  <tr key={i} className="text-xs text-gray-300">
+                    <td className="py-2.5 pr-4 font-medium">{r.plan_code || "—"}</td>
+                    <td className="py-2.5 pr-4">{r.plan_description || "—"}</td>
+                    <td className="py-2.5 pr-4">{r.unit_price} {cur}</td>
+                    <td className="py-2.5 pr-4">{r.quantity}</td>
+                    <td className="py-2.5">
                       {r.period_covered ? String(r.period_covered).slice(0,10) : "—"}
                     </td>
                   </tr>
@@ -134,18 +134,10 @@ const DetailPanel = ({ transactionId, currency, onRefund }) => {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 140 }}>
+        <div className="flex flex-col gap-2.5 min-w-[160px] w-full lg:w-auto mt-4 lg:mt-0">
           <button
             onClick={handleViewInvoice}
-            style={{
-              background: "#1a1a1a", color: "#d4d4d4",
-              border: "1px solid #444", borderRadius: 7,
-              padding: "8px 14px", fontSize: 12, fontWeight: 600,
-              cursor: "pointer", whiteSpace: "nowrap",
-              display: "flex", alignItems: "center", gap: 6,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#888")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#444")}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-[#252525] border border-[#444] rounded-md text-xs font-semibold text-gray-300 hover:bg-[#333] hover:border-gray-500 transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -157,22 +149,13 @@ const DetailPanel = ({ transactionId, currency, onRefund }) => {
           <button
             onClick={handleRefund}
             disabled={refunding}
-            style={{
-              background: "transparent", color: "#e05252",
-              border: "1.5px solid #e05252", borderRadius: 7,
-              padding: "8px 14px", fontSize: 12, fontWeight: 600,
-              cursor: refunding ? "default" : "pointer", whiteSpace: "nowrap",
-              opacity: refunding ? 0.6 : 1,
-              display: "flex", alignItems: "center", gap: 6,
-            }}
-            onMouseEnter={(e) => !refunding && (e.currentTarget.style.background = "#2a0a0a")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            className={`flex items-center justify-center gap-2 px-4 py-2 bg-transparent border border-[#e05252]/50 rounded-md text-xs font-semibold text-[#e05252] hover:bg-[#e05252]/10 hover:border-[#e05252] transition-colors ${refunding ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
             </svg>
-            {refunding ? "กำลัง Refund..." : "Refund This Item"}
+            {refunding ? "Refunding..." : "Refund This Item"}
           </button>
         </div>
       </div>
@@ -180,35 +163,12 @@ const DetailPanel = ({ transactionId, currency, onRefund }) => {
   );
 };
 
-// ── Confirm Modal ─────────────────────────────────────────────────────────────
-const ConfirmModal = ({ target, onConfirm, onCancel }) => (
-  <div style={{ position: "fixed", inset: 0, background: "#000b", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
-    <div style={{ background: "#1a1a1a", border: "1px solid #333", borderRadius: 12, padding: "28px 32px", width: 340, textAlign: "center" }}>
-      <p style={{ color: "#fff", fontWeight: 600, fontSize: 15, marginBottom: 6 }}>ลบ Transaction นี้?</p>
-      <p style={{ color: "#888", fontSize: 12, marginBottom: 24 }}>{target?.transactions_code || `#${target?.transaction_id}`} จะถูกลบถาวร</p>
-      <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-        <button onClick={onCancel} style={{ background: "#2a2a2a", color: "#ccc", border: "1px solid #444", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 13 }}>ยกเลิก</button>
-        <button onClick={onConfirm} style={{ background: "#e05252", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>ลบเลย</button>
-      </div>
-    </div>
-  </div>
-);
-
-const PagBtn = ({ children, active, disabled, onClick }) => (
-  <button onClick={onClick} disabled={disabled} style={{
-    width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-    background: active ? "#1db954" : "#1a1a1a", color: active ? "#000" : "#888",
-    border: "1px solid #2a2a2a", borderRadius: 6,
-    fontSize: 13, fontWeight: active ? 700 : 400,
-    cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.35 : 1,
-  }}>{children}</button>
-);
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 const Transaction = () => {
   const [transactions, setTransactions] = useState([]);
   const [pagination, setPagination]     = useState({ currentPage: 1, totalPages: 1, totalItems: 0 });
   const [search, setSearch]             = useState("");
+  const [searchQuery, setSearchQuery]   = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState(null);
@@ -225,7 +185,7 @@ const Transaction = () => {
     setLoading(true); setError(null);
     try {
       const p = new URLSearchParams({ page });
-      if (search)       p.append("search", search);
+      if (searchQuery)  p.append("search", searchQuery);
       if (statusFilter) p.append("status", statusFilter); 
       const res  = await fetch(`${API_BASE}/transactions?${p}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -233,220 +193,230 @@ const Transaction = () => {
       setTransactions(json.data || []);
       setPagination(json.pagination || { currentPage: 1, totalPages: 1, totalItems: 0 });
     } catch (err) {
-      setError("ไม่สามารถโหลดข้อมูลได้: " + err.message);
+      setError("Failed to load data: " + err.message);
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [searchQuery, statusFilter]);
 
-  useEffect(() => { fetchData(1); }, [fetchData]);
+  useEffect(() => { fetchData(pagination.currentPage); }, [fetchData, pagination.currentPage]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      setSearchQuery(search);
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
       const res = await fetch(`${API_BASE}/transactions/${deleteTarget.transaction_id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      showToast(`ลบ ${deleteTarget.transactions_code || "#" + deleteTarget.transaction_id} เรียบร้อยแล้ว`);
+      showToast(`Deleted ${deleteTarget.transactions_code || "#" + deleteTarget.transaction_id} successfully`);
       setExpandedId(null);
       fetchData(pagination.currentPage);
     } catch (err) {
-      showToast("ลบไม่สำเร็จ: " + err.message, "error");
+      showToast("Delete failed: " + err.message, "error");
     } finally {
       setDeleteTarget(null);
     }
   };
 
   const handleRefundDone = () => {
-    showToast("Refund สำเร็จแล้ว");
+    showToast("Refund successful");
     fetchData(pagination.currentPage);
   };
 
   const toggleExpand = (id) => setExpandedId((prev) => (prev === id ? null : id));
 
-  const TH = ({ children }) => (
-    <th style={{
-      padding: "14px 20px", textAlign: "left",
-      fontSize: 11, color: "#888", fontWeight: 600,
-      letterSpacing: "0.08em", borderBottom: "1px solid #2a2a2a", whiteSpace: "nowrap",
-    }}>{children}</th>
-  );
-
   return (
-    <div style={{ padding: "28px 32px", minHeight: "100vh", fontFamily: "inherit" }}>
-
+    <div className="flex flex-col gap-5 p-8 text-[#e0e0e0]">
       {toast && (
-        <div style={{
-          position: "fixed", top: 20, right: 24, zIndex: 1000,
-          background: toast.type === "error" ? "#3a1010" : "#0f2e1a",
-          color: toast.type === "error" ? "#e05252" : "#1db954",
-          border: `1px solid ${toast.type === "error" ? "#e0525244" : "#1db95444"}`,
-          borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 600,
-          boxShadow: "0 4px 20px #0008",
-        }}>
-          {toast.type === "error" ? "✕" : "✓"} {toast.msg}
+        <div className={`fixed top-8 right-8 z-[1100] flex items-center gap-3 px-6 py-3 rounded-xl border shadow-2xl animate-in fade-in slide-in-from-right-8 duration-300 ${
+          toast.type === "error" ? "bg-[#3a1010] border-red-500/30 text-red-500" : "bg-[#0f2e1a] border-[#1db954]/30 text-[#1db954]"
+        }`}>
+          <span className="text-lg font-bold">{toast.type === "error" ? "✕" : "✓"}</span>
+          <span className="text-sm font-semibold">{toast.msg}</span>
         </div>
       )}
 
-      <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 600, margin: "0 0 20px", letterSpacing: "-0.01em" }}>
-        Transaction
-      </h1>
-
       {/* Toolbar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <div style={{ position: "relative" }}>
-          <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#555", pointerEvents: "none" }}
-            width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
+      <div className="flex justify-between items-center mt-2">
+        <div className="flex gap-3 items-center">
+          <SearchBox 
+            placeholder="Search transactions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && fetchData(1)}
-            placeholder="Search..."
-            style={{
-              width: 220, padding: "8px 12px 8px 32px",
-              background: "transparent", border: "1px solid #333",
-              borderRadius: 7, color: "#d4d4d4", fontSize: 13, outline: "none",
-            }}
+            onKeyDown={handleKeyDown}
           />
+
+          <div className="relative">
+            <select 
+              value={statusFilter} 
+              onChange={(e) => { setStatusFilter(e.target.value); setPagination(prev => ({ ...prev, currentPage: 1 })); }}
+              className="appearance-none bg-[#242424] border border-[#444] rounded-md py-1.5 pl-4 pr-10 text-sm text-gray-300 outline-none cursor-pointer focus:border-[#1DB954]"
+            >
+              <option value="">All Status</option>
+              <option value="completed">SUCCESS</option>
+              <option value="failed">FAILED</option>
+              <option value="pending">PENDING</option>
+              <option value="refunded">REFUNDED</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+              <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+            </div>
+          </div>
+
+          <FilterBtn onClick={() => { setSearchQuery(search); setPagination(prev => ({ ...prev, currentPage: 1 })); }} />
         </div>
-        <button onClick={() => fetchData(1)} style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "8px 16px", background: "transparent",
-          border: "1px solid #333", borderRadius: 7,
-          color: "#ccc", fontSize: 13, cursor: "pointer",
-        }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-          Filter
-        </button>
-        <div style={{ flex: 1 }} />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{
-          padding: "8px 14px", background: "transparent",
-          border: "1px solid #333", borderRadius: 7,
-          color: statusFilter ? "#d4d4d4" : "#888", fontSize: 13,
-          outline: "none", cursor: "pointer",
-        }}>
-          <option value="">All Status</option>
-          <option value="completed">SUCCESS</option>
-          <option value="failed">FAILED</option>
-          <option value="pending">PENDING</option>
-          <option value="refunded">REFUNDED</option>
-        </select>
       </div>
 
-      {/* Table */}
-      <div style={{ border: "1px solid #2a2a2a", borderRadius: 8, overflow: "hidden" }}>
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#444", fontSize: 13 }}>กำลังโหลด...</div>
-        ) : error ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#e05252", fontSize: 13 }}>⚠ {error}</div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      {/* Table container */}
+      <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr style={{ background: "#1a1a1a" }}>
-                <TH>#</TH>
-                <TH>CODE</TH>
-                <TH>CREATE AT</TH>
-                <TH>USER</TH>
-                <TH>PAYMENT METHOD</TH>
-                <TH>AMOUNT</TH>
-                <TH>STATUS</TH>
-                <th style={{ padding: "14px 20px", borderBottom: "1px solid #2a2a2a" }}></th>
+              <tr className="bg-[#252525] text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-[#333]">
+                <th className="px-6 py-4 w-12">#</th>
+                <th className="px-6 py-4">Code</th>
+                <th className="px-6 py-4">Create At</th>
+                <th className="px-6 py-4">User</th>
+                <th className="px-6 py-4">Payment Method</th>
+                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right"></th>
               </tr>
             </thead>
-            <tbody>
-              {transactions.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "56px 0", color: "#444", fontSize: 13 }}>ไม่พบข้อมูล</td></tr>
-              ) : transactions.map((tx, i) => {
-                const rowNo  = (pagination.currentPage - 1) * 10 + i + 1;
-                const isOpen = expandedId === tx.transaction_id;
-                const isEven = i % 2 === 1;
-                const rowBg  = isEven ? "#141414" : "#111";
+            <tbody className="divide-y divide-[#222]">
+              {loading ? (
+                [...Array(8)].map((_, i) => (
+                  <tr key={i} className="animate-pulse h-[72px]">
+                    <td colSpan="8" className="px-6 py-4"><div className="h-4 bg-[#333] rounded w-full"></div></td>
+                  </tr>
+                ))
+              ) : error ? (
+                <tr><td colSpan="8" className="px-6 py-20 text-center text-red-500 text-sm">⚠ {error}</td></tr>
+              ) : transactions.length === 0 ? (
+                <tr><td colSpan="8" className="px-6 py-20 text-center text-gray-500 text-sm italic">No transactions found</td></tr>
+              ) : (
+                transactions.map((tx, i) => {
+                  const rowNo  = (pagination.currentPage - 1) * 10 + i + 1;
+                  const isOpen = expandedId === tx.transaction_id;
 
-                return (
-                  <React.Fragment key={tx.transaction_id}>
-                    <tr
-                      style={{ background: isOpen ? "#1a1a1a" : rowBg, transition: "background .1s", cursor: "pointer" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#1e1e1e")}
-                      onMouseLeave={(e) => !isOpen && (e.currentTarget.style.background = rowBg)}
-                      onClick={() => toggleExpand(tx.transaction_id)}
-                    >
-                      <td style={{ padding: "16px 20px", fontSize: 14, color: "#666", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222", width: 40 }}>{rowNo}</td>
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#fff", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222" }}>
-                        {tx.transactions_code || `TX-${String(tx.transaction_id).padStart(4,"0")}`}
-                      </td>
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#aaa", borderBottom: isOpen ? "none" : "1px solid #222" }}>{fmtDate(tx.transaction_date)}</td>
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: isOpen ? "none" : "1px solid #222" }}>{tx.display_name || tx.username || "—"}</td>
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#d4d4d4", borderBottom: isOpen ? "none" : "1px solid #222" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#bbb" }}>
-                          <span style={{ opacity: 0.55 }}>{PAYMENT_SVG[tx.payment_method]}</span>
-                          {tx.payment_method || "—"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "16px 20px", fontSize: 13, color: "#fff", fontWeight: 600, borderBottom: isOpen ? "none" : "1px solid #222", whiteSpace: "nowrap" }}>
-                        {tx.amount || 0} {tx.currency || "THB"}
-                      </td>
-                      <td style={{ padding: "16px 20px", borderBottom: isOpen ? "none" : "1px solid #222" }}>
-                        <StatusBadge status={tx.status} />
-                      </td>
-                      <td style={{ padding: "16px 20px", borderBottom: isOpen ? "none" : "1px solid #222", textAlign: "right" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx); }}
-                            style={{
-                              background: "transparent", color: "#e05252",
-                              border: "1px solid #333", borderRadius: 6,
-                              padding: "4px 12px", fontSize: 12, cursor: "pointer",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#e05252")}
-                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333")}
-                          >Delete</button>
-                          <span style={{ color: "#555" }}><Chevron open={isOpen} /></span>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isOpen && (
-                      <tr style={{ background: "#0d0d0d" }}>
-                        <td colSpan={8} style={{ padding: 0, borderBottom: "1px solid #2a2a2a" }}>
-                          <DetailPanel
-                            transactionId={tx.transaction_id}
-                            currency={tx.currency}
-                            onRefund={handleRefundDone}
-                          />
+                  return (
+                    <React.Fragment key={tx.transaction_id}>
+                      <tr
+                        className={`group hover:bg-[#2a2a2a] transition-colors cursor-pointer h-[72px] ${isOpen ? "bg-[#252525]" : ""}`}
+                        onClick={() => toggleExpand(tx.transaction_id)}
+                      >
+                        <td className="px-6 py-4 text-sm font-bold text-gray-500">{rowNo}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-bold text-white group-hover:text-[#1DB954] transition-colors">
+                            {tx.transactions_code || `TX-${String(tx.transaction_id).padStart(4,"0")}`}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-400 font-medium">{fmtDate(tx.transaction_date).split('T')[0]}</td>
+                        <td className="px-6 py-4 text-sm text-gray-300 font-semibold">{tx.display_name || tx.username || "—"}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2.5 text-sm text-gray-400">
+                            <span className="opacity-60">{PAYMENT_SVG[tx.payment_method]}</span>
+                            {tx.payment_method || "—"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-bold text-white">
+                            {tx.amount?.toLocaleString() || 0} <span className="text-[10px] text-gray-500 ml-0.5">{tx.currency || "THB"}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusBadge status={tx.status} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx); }}
+                              className="px-3 py-1.5 bg-[#252525] border border-[#444] rounded text-[11px] font-bold text-[#e05252] opacity-0 group-hover:opacity-100 hover:bg-[#333] hover:border-[#e05252] transition-all"
+                            >Delete</button>
+                            <span className="text-gray-600 group-hover:text-gray-400 transition-colors"><Chevron open={isOpen} /></span>
+                          </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+
+                      {isOpen && (
+                        <tr>
+                          <td colSpan="8" className="p-0 border-b border-[#2a2a2a]">
+                            <DetailPanel
+                              transactionId={tx.transaction_id}
+                              currency={tx.currency}
+                              onRefund={handleRefundDone}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
 
       {/* Pagination */}
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 4, marginTop: 16 }}>
-        <PagBtn disabled={pagination.currentPage === 1} onClick={() => fetchData(pagination.currentPage - 1)}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </PagBtn>
+      <div className="flex justify-end items-center gap-2 mt-3 pb-8 pr-2">
+        <button 
+          disabled={pagination.currentPage === 1}
+          onClick={() => setPagination(prev => ({ ...prev, currentPage: Math.max(prev.currentPage - 1, 1) }))}
+          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
+            pagination.currentPage === 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"
+          }`}
+        >
+          ‹
+        </button>
         {Array.from({ length: pagination.totalPages }, (_, k) => k + 1)
-          .filter((p) => Math.abs(p - pagination.currentPage) <= 2)
-          .map((p) => (
-            <PagBtn key={p} active={p === pagination.currentPage} onClick={() => fetchData(p)}>{p}</PagBtn>
-          ))}
-        <PagBtn disabled={pagination.currentPage === pagination.totalPages} onClick={() => fetchData(pagination.currentPage + 1)}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </PagBtn>
+          .filter((p) => Math.abs(p - pagination.currentPage) <= 2 || p === 1 || p === pagination.totalPages)
+          .map((p, idx, arr) => {
+            const showEllipsis = idx > 0 && p - arr[idx-1] > 1;
+            return (
+              <React.Fragment key={p}>
+                {showEllipsis && <span className="text-gray-600 mx-1">...</span>}
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, currentPage: p }))}
+                  className={`w-10 h-10 flex items-center justify-center rounded-lg border text-sm font-bold transition-all ${
+                    p === pagination.currentPage 
+                      ? "bg-[#1DB954] border-[#1DB954] text-black scale-105 shadow-[0_0_15px_rgba(29,185,84,0.3)]"
+                      : "bg-transparent border-[#444] text-gray-400 hover:border-gray-200 hover:text-white"
+                  }`}
+                >
+                  {p}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        <button 
+          disabled={pagination.currentPage === pagination.totalPages}
+          onClick={() => setPagination(prev => ({ ...prev, currentPage: Math.min(prev.currentPage + 1, pagination.totalPages) }))}
+          className={`w-10 h-10 flex items-center justify-center rounded-lg border border-[#444] transition-colors ${
+            pagination.currentPage === pagination.totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-[#333] text-gray-300"
+          }`}
+        >
+          »
+        </button>
       </div>
 
       {deleteTarget && (
-        <ConfirmModal target={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
+        <DeleteModal 
+          isOpen={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+          title="Delete Transaction?"
+          targetName={deleteTarget?.transactions_code || `#${deleteTarget?.transaction_id}`}
+        />
       )}
     </div>
   );
 };
 
 export default Transaction;
+

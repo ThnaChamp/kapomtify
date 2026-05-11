@@ -112,8 +112,7 @@ export default function ChartPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 p-0 text-[#e0e0e0]">
-      <div className="px-8 pt-6 flex flex-col gap-5">
+    <div className="flex flex-col gap-5 p-8 text-[#e0e0e0]">
 
         {/* Toolbar */}
         <div className="flex justify-between items-center">
@@ -206,7 +205,6 @@ export default function ChartPage() {
             »
           </button>
         </div>
-      </div>
 
       {/* ── Modal Create ── */}
       {isModalOpen && (

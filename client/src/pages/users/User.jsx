@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import DeleteModal from "../../components/DeleteModal";
+import SearchBox from "../../components/searchBox";
 
 /* ── Icons ── */
 const FilterIcon = () => (
@@ -17,6 +19,7 @@ export default function UsersPage() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -33,6 +36,20 @@ export default function UsersPage() {
       console.error("Fetch users error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${deleteTarget.user_id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      fetchUsers(); // Refresh data
+    } catch (error) {
+      console.error("Delete user error:", error);
+      alert("ไม่สามารถลบผู้ใช้ได้");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -55,16 +72,12 @@ export default function UsersPage() {
       {/* ── Toolbar ── */}
       <div className="flex justify-between items-center mt-2">
         <div className="flex gap-3 items-center">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search users..."
-              className="bg-[#242424] border border-[#444] rounded-md py-1.5 px-4 text-sm w-64 focus:outline-none focus:border-[#1DB954]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
+          <SearchBox 
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
           
           <div className="relative">
             <select 
@@ -89,6 +102,7 @@ export default function UsersPage() {
           </button>
         </div>
       </div>
+      
 
       {/* ── Users Table Container ── */}
       <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden shadow-xl mt-2">
@@ -151,7 +165,10 @@ export default function UsersPage() {
                         >
                           Detail
                         </button>
-                        <button className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]">
+                        <button 
+                          onClick={() => setDeleteTarget(user)}
+                          className="px-3 py-1 bg-[#252525] border border-[#444] rounded text-[11px] text-[#f87171] hover:bg-[#333]"
+                        >
                           Delete
                         </button>
                       </div>
@@ -207,6 +224,14 @@ export default function UsersPage() {
           »
         </button>
       </div>
+
+      <DeleteModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete User?"
+        targetName={deleteTarget?.display_name || deleteTarget?.username}
+      />
     </div>
   );
 }
